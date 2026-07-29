@@ -1,0 +1,125 @@
+# ==============================================================
+# Kgui - Configuration Principale
+# Moteur de GUI avancé pour serveurs 1.8.8 Faction/PvP
+# ==============================================================
+
+# Mode debug (affiche des informations supplémentaires dans la console)
+debug: false
+
+# ==============================================================
+# SÉCURITÉ
+# ==============================================================
+security:
+  # Tag NBT utilisé pour identifier les items de GUI
+  nbt_tag: "KGUI_ITEM"
+  
+  # Nettoyer l'inventaire du joueur à la fermeture du menu
+  clean_on_close: true
+  
+  # Nettoyer l'inventaire quand le joueur change de monde
+  clean_on_world_change: true
+  
+  # Nettoyer l'inventaire quand le joueur se déconnecte
+  clean_on_quit: true
+  
+  # Bloquer la vente d'items GUI sur ZAuctionHouse
+  block_auction_house: true
+
+# ==============================================================
+# COMBAT
+# ==============================================================
+combat:
+  # Bloquer l'ouverture des menus en combat
+  block_in_combat: true
+  
+  # Fermer automatiquement le menu si le joueur entre en combat
+  close_on_combat: true
+  
+  # Cooldown (en secondes) après combat pour ouvrir un menu
+  cooldown_after_combat: 0
+
+# ==============================================================
+# MONDES
+# ==============================================================
+worlds:
+  # Mode: whitelist (seulement les mondes listés) ou blacklist (tous sauf les listés)
+  mode: blacklist
+  
+  # Liste des mondes (selon le mode)
+  list:
+    - world_nether
+    - world_the_end
+
+# ==============================================================
+# PERFORMANCE
+# ==============================================================
+performance:
+  # Intervalle de cache des placeholders (en ticks)
+  placeholder_cache_ticks: 20
+  
+  # Utiliser ProtocolLib pour les updates de slots (plus performant)
+  use_protocol_lib: true
+  
+  # Nombre maximum de menus en cache
+  max_cached_menus: 100
+
+# ==============================================================
+# ANIMATIONS
+# ==============================================================
+animations:
+  # Activer les animations
+  enabled: true
+  
+  # Intervalle minimum entre les frames (en ticks)
+  min_interval: 5
+
+# ==============================================================
+# SONS
+# ==============================================================
+sounds:
+  # Son à l'ouverture d'un menu
+  menu_open:
+    enabled: true
+    sound: CHEST_OPEN
+    volume: 1.0
+    pitch: 1.0
+  
+  # Son au clic sur un bouton
+  button_click:
+    enabled: true
+    sound: CLICK
+    volume: 0.5
+    pitch: 1.2
+  
+  # Son quand une condition n'est pas remplie
+  denied:
+    enabled: true
+    sound: VILLAGER_NO
+    volume: 1.0
+    pitch: 0.8
+
+# ==============================================================
+# RÉGION (WorldGuard)
+# ==============================================================
+region:
+  # Activer les triggers par région
+  enabled: true
+  
+  # Cooldown entre deux déclenchements (en secondes)
+  trigger_cooldown: 5
+  
+  # Distance de vérification (optimisation)
+  check_distance: 1.5
+
+# ==============================================================
+# HOVER (ProtocolLib)
+# ==============================================================
+hover:
+  # Activer le système de hover
+  enabled: true
+  
+  # Mode: packet (via ProtocolLib) ou timer (vérification périodique)
+  mode: packet
+  
+  # Intervalle de vérification en mode timer (en ticks)
+  timer_interval: 2

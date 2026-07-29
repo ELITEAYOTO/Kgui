@@ -1,0 +1,202 @@
+title: "&7【&8&lSpawners &7】&7Page %page%/%max_page%"
+size: 54
+type: paginated
+  
+pagination:
+  enabled: true
+  content_slots: '20-24'  # Slots où les items dynamiques apparaissent
+  prev_button_slot: 19                 # Slot du bouton "page précédente"
+  next_button_slot: 25                 # Slot du bouton "page suivante"
+  max_pages: 2                 # Nombre total de pages (ajustez selon vos besoins)
+open_commands:
+  - 'sp'
+  - 'spawner'
+open_actions:
+  - '[message] &6Ouverture du menu des Spawners!'
+allowed_worlds:
+  - 'world'
+block_in_combat: true
+cooldown: 2
+update_interval: 20
+
+items:
+  
+  background:
+    slots: "0,1,7,8,9,17,36,44,45,46,52,53"
+    material: CLAY_BALL
+    cit: background_5
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+    
+
+  background2:
+    slots: "2,3,5,6,10,11,12,13,14,15,16,18,26,27,28,29,30,31,32,33,34,35,37,38,39,40,41,42,43,47,48,50,51"
+    material: CLAY_BALL
+    cit: background_4
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  Home:
+    slots: "4"
+    material: CLAY_BALL
+    cit: home_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6۩ &e&lMenu  Principal &6۩"
+    lore:
+    - "&6&l⊲ &7Retourner au"
+    - "  &7Menu Principale"
+  
+  parameter:
+    slots: "49"
+    material: CLAY_BALL
+    cit: gear
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lInfos"
+    lore:
+    - "&8---------------"
+    - "%player_displayname%"
+    - "&6Argent: &e%vault_eco_balance_formatted%"
+    - "&5Points Boutiques: &d%playerpoints_points%"
+    - "&8---------------"
+
+  poule:
+    slot: 20
+    view_requirements:
+      - "expression: %page% == 1"
+    material: CLAY_BALL
+    cit: poulet
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6Spawners à poule"
+    lore:
+    - "&8● &7Obtenable dans "
+    - "&7la caisse spawners"
+
+  pig:
+    slot: 21
+    view_requirements:
+      - "expression: %page% == 1"
+    material: CLAY_BALL
+    cit: pig
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6Spawners à cochon"
+    lore:
+    - "&8● &7Obtenable dans "
+    - "&7la caisse spawners"
+    
+  
+  vache:
+    slot: 22
+    view_requirements:
+      - "expression: %page% == 1"
+    material: CLAY_BALL
+    cit: vache
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6Spawners à vache"
+    lore:
+    - "&8● &7Obtenable dans "
+    - "&7la caisse spawners"
+  
+  spider:
+    slot: 23
+    view_requirements:
+      - "expression: %page% == 1"
+    material: CLAY_BALL
+    cit: spider
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6Spider"
+    lore:
+    - "&8● &7Obtenable dans "
+    - "&7la caisse spawners"
+
+  zombie:
+    slot: 24
+    view_requirements:
+      - "expression: %page% == 1"
+    material: CLAY_BALL
+    cit: zombie
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6Spawners à Zombie"
+    lore:
+    - "&8● &7Obtenable dans "
+    - "&7la caisse spawners"
+  
+  skeletton:
+    slot: 20
+    view_requirements:
+      - "expression: %page% == 2"
+    material: CLAY_BALL
+    cit: skeletton
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6Spawners à Squelette"
+    lore:
+    - "&8● &7Obtenable dans "
+    - "&7la caisse spawners"
+
+  prev_button:
+    slot: 19
+    material: CLAY_BALL
+    cit: arrow_left1             # CIT directement dans le menu
+    display_name: "&e&l◄ Page Précédente"
+    lore:
+      - "&7Page %page%/%max_page%"
+    hide_attributes: true
+    kgui_protected: true
+    priority: 10
+    view_requirements:
+      - "expression: %page% > 1"
+    click_actions:
+      - "[prev_page]"
+  
+  prev_button_disabled:
+    slot: 19
+    material: CLAY_BALL
+    cit: background_4         # ← CIT pour version désactivée (ou même CIT)
+    display_name: " "
+    hide_attributes: true
+    kgui_protected: true
+    priority: 1                       # ← Priorité basse
+
+  next_button:
+    slot: 25
+    material: CLAY_BALL
+    cit: arrow_right1
+    display_name: "&e&lPage Suivante ►"
+    lore:
+      - "&7Page %page%/%max_page%"
+    hide_attributes: true
+    kgui_protected: true
+    priority: 10
+    view_requirements:
+      - "expression: %page% < %max_page%"
+    click_actions:
+      - "[next_page]"
+
+  next_button_disabled:
+    slot: 25
+    material: CLAY_BALL
+    cit: background_4
+    display_name: " "
+    hide_attributes: true
+    kgui_protected: true
+    priority: 1
+    

@@ -1,0 +1,32 @@
+# Template de bordure par défaut
+# Ce template peut être hérité par d'autres menus
+
+# Items de bordure
+items:
+  # Bordure supérieure
+  border_top:
+    slots: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+    material: STAINED_GLASS_PANE
+    data: 15  # Noir
+    name: " "
+    
+  # Bordure inférieure (pour menu 54 slots)
+  border_bottom:
+    slots: [45, 46, 47, 48, 49, 50, 51, 52, 53]
+    material: STAINED_GLASS_PANE
+    data: 15
+    name: " "
+    
+  # Bordure gauche
+  border_left:
+    slots: [9, 18, 27, 36]
+    material: STAINED_GLASS_PANE
+    data: 15
+    name: " "
+    
+  # Bordure droite
+  border_right:
+    slots: [17, 26, 35, 44]
+    material: STAINED_GLASS_PANE
+    data: 15
+    name: " "

@@ -1,0 +1,230 @@
+# ==============================================================================
+# KGUI - UPGRADES & SKILLS FACTION (faction_upgrades.yml)
+# ==============================================================================
+# Menu principal des ameliorations de faction
+# Contenu a implementer plus tard selon FACTION_GUI_LOGS_PLAN.md
+#
+# OUVERTURE: Via faction_menu.yml ou /f upgrade
+# ==============================================================================
+
+title: "&6【 &3&lUpgrades & Skills &6】"
+size: 54
+type: normal
+
+block_in_combat: true
+cooldown: 2
+update_interval: 20
+
+# ==============================================================================
+# ITEMS
+# ==============================================================================
+items:
+
+  # ============================================================================
+  # BACKGROUNDS - Bordures orange
+  # ============================================================================
+  background:
+    slots: "0,1,2,3,5,6,7,8,9,17,18,26,27,35,36,44,46,47,48,50,51,52,53"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+    
+  # ============================================================================
+  # BACKGROUNDS - Jaune interieur
+  # ============================================================================
+  background2:
+    slots: "10,11,14,15,16,19,20,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43"
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  # ============================================================================
+  # TITRE (slot 4)
+  # ============================================================================
+  title_item:
+    slot: 4
+    material: BEACON
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&3&lUpgrades & Skills"
+    lore:
+      - ""
+      - "&7Niveau de faction: &6%kfaction_faction_level%"
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - ""
+      - "&7Ameliore ta faction en"
+      - "&7completant des missions et"
+      - "&7en debloquant des skills!"
+
+  # ============================================================================
+  # MISSIONS (slot 12)
+  # ============================================================================
+  missions:
+    slot: 12
+    material: BOOK_AND_QUILL
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6&lQuetes"
+    lore:
+      - ""
+      - "&7Complete des quetes pour"
+      - "&7gagner de l'XP et monter"
+      - "&7en niveau!"
+      - ""
+      - "&7Categorie: &e%kfaction_faction_category%"
+      - "&7Restantes: &e%kfaction_faction_quests_remaining%"
+      - ""
+      - "&e▸ Clic pour voir"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_quests"
+
+  # ============================================================================
+  # SKILLS (slot 13)
+  # ============================================================================
+  skills:
+    slot: 13
+    material: ENCHANTED_BOOK
+    glow: true
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&2&lCategories"
+    lore:
+      - ""
+      - "&7Choisis la categorie de"
+      - "&7quetes pour ta faction."
+      - ""
+      - "&7Categories:"
+      - "&8▸ &7⛏ &fMineur"
+      - "&8▸ &a☘ &fFarmer"
+      - "&8▸ &c⚔ &fChasseur"
+      - ""
+      - "&a▸ Clic pour choisir"
+    
+    view_requirements:
+      - "faction_role: MODERATOR"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_quest_category"
+
+  # ============================================================================
+  # AMELIORATIONS (slot 21)
+  # ============================================================================
+  upgrades:
+    slot: 21
+    material: NETHER_STAR
+    glow: true
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&3&lRecompenses"
+    lore:
+      - ""
+      - "&7Voir les recompenses"
+      - "&7debloquables par niveau."
+      - ""
+      - "&7Exemples:"
+      - "&8▸ &6Coffre Faction"
+      - "&8▸ &e+F-Warps"
+      - "&8▸ &bF-Fly dans les claims"
+      - "&8▸ &cAnti-Sethome"
+      - ""
+      - "&b▸ Clic pour voir"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_rewards"
+
+  # ============================================================================
+  # STATS (slot 22)
+  # ============================================================================
+  stats:
+    slot: 22
+    material: CLAY_BALL
+    cit: gear
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&f&lNiveau Faction"
+    lore:
+      - ""
+      - "&7Niveau: &6%kfaction_faction_level%"
+      - "&7XP: &a%kfaction_faction_xp%&7/&a%kfaction_faction_required_xp%"
+      - "&7%kfaction_faction_progressbar%"
+      - ""
+      - "&7Coffre: %kfaction_faction_has_chest_display%"
+      - "&7Fly: %kfaction_faction_has_fly_display%"
+      - "&7Anti-Home: %kfaction_faction_has_antisethome_display%"
+      - ""
+      - "&e▸ Clic pour details"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_level"
+
+  # ============================================================================
+  # PRESTIGE (slot 23)
+  # ============================================================================
+  prestige:
+    slot: 23
+    material: DIAMOND
+    glow: true
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&5&lPrestige"
+    lore:
+      - ""
+      - "&7Prestige actuel: &6★ 0"
+      - ""
+      - "&7Reinitialise ton niveau pour"
+      - "&7des bonus permanents!"
+      - ""
+      - "&7Requis: Niveau &e10"
+      - ""
+      - "&d▸ Bientot disponible!"
+    
+    view_requirements:
+      - "faction_role: LEADER"
+
+  # ============================================================================
+  # INFO (slot 49)
+  # ============================================================================
+  info_button:
+    slot: 49
+    material: CLAY_BALL
+    cit: gear
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lInfos"
+    lore:
+      - "&8---------------"
+      - "%player_displayname%"
+      - "&6Argent: &e%vault_eco_balance_formatted%"
+      - "&7Role: &f%kfaction_faction_role%"
+      - "&8---------------"
+
+  # ============================================================================
+  # RETOUR (slot 45)
+  # ============================================================================
+  back_button:
+    slot: 45
+    material: ARROW
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&c&l◄ Retour"
+    lore:
+      - ""
+      - "&7Retourner au menu faction"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 0.8"
+      - "[open] faction_menu"

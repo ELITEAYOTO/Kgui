@@ -1,0 +1,127 @@
+title: "&6♕ &e&lGrades &6♕"
+size: 54
+type: normal
+open_commands:
+  - 'grades'
+  - 'rank'
+  - 'rankup'
+  - 'ranks'
+  - 'rank'
+open_actions:
+  - '[message] &6Ouverture de la Boutique!'
+allowed_worlds:
+  - 'world'
+block_in_combat: true
+cooldown: 2
+update_interval: 20
+
+items:
+  
+  background:
+    slots: "0,1,7,8,9,17,36,44,45,46,52,53"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+    
+
+  background2:
+    slots: "2,3,5,6,10,11,12,13,14,15,16,18,19,25,26,27,28,29,30,31,32,33,34,35,37,38,39,40,41,42,43,47,48,50,51"
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  Home:
+    slots: "4"
+    material: CLAY_BALL
+    cit: home_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6۩ &e&lMenu  Principal &6۩"
+    lore:
+    - "&6&l⊲ &7Retourner au"
+    - "  &7Menu Principale"
+  
+  parameter:
+    slots: "49"
+    material: CLAY_BALL
+    cit: gear
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lInfos"
+    lore:
+    - "&8---------------"
+    - "%player_displayname%"
+    - "&6Argent: &e%vault_eco_balance_formatted%"
+    - "&5Points Boutiques: &d%playerpoints_points%"
+    - "&8---------------"
+
+  Vulkarien:
+    slots: "20"
+    material: CLAY_BALL
+    cit: gris_trophy
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&a&lGrades Vulkarien"
+    lore:
+    - "%changeoutput_equals_input:{luckperms_has_permission_rank.vulkarien}_matcher:yes_ifmatch:&aVous possédez déjà ce grade_else:&cVous ne possédez pas ce grade%"
+
+
+  Pyron:
+    slots: "21"
+    material: CLAY_BALL
+    cit: orange_trophy2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6&lGrades Pyron"
+    lore:
+    - "%changeoutput_equals_input:{luckperms_has_permission_rank.pyron}_matcher:yes_ifmatch:&aVous possédez déjà ce grade_else:&cVous ne possédez pas ce grade%"
+
+    
+  
+  Centurion:
+    slots: "22"
+    material: CLAY_BALL
+    cit: yellow_trophy
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lGrades Centurion"
+    lore:
+    - "%changeoutput_equals_input:{luckperms_has_permission_rank.centurion}_matcher:yes_ifmatch:&aVous possédez déjà ce grade_else:&cVous ne possédez pas ce grade%"
+
+  
+  Prétorien:
+    slots: "23"
+    material: CLAY_BALL
+    cit: red_trophy
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&c&lGrades Prétorien"
+    lore:
+    - "%changeoutput_equals_input:{luckperms_has_permission_rank.prétorien}_matcher:yes_ifmatch:&aVous possédez déjà ce grade_else:&cVous ne possédez pas ce grade%"
+
+  Sultan:
+    slots: "24"
+    material: CLAY_BALL
+    cit: orange_trophy
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6&lGrades &6&lSul&e&ltan"
+    lore:
+    - "%changeoutput_equals_input:{luckperms_has_permission_rank.sultan}_matcher:yes_ifmatch:&aVous possédez déjà ce grade_else:&cVous ne possédez pas ce grade%"
+
+    
+
+    

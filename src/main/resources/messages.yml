@@ -1,0 +1,87 @@
+# ==============================================================
+# Kgui - Messages
+# Utilisez & pour les codes couleur
+# Placeholders disponibles: %player%, %menu%, %item%, %reason%
+# ==============================================================
+
+prefix: "&8[&6Kgui&8] "
+
+# Messages généraux (clés simples pour le code)
+no-permission: "&cVous n'avez pas la permission de faire cela."
+player-not-found: "&cJoueur introuvable: &e%player%"
+menu-not-found: "&cMenu introuvable: &e%menu%"
+player-only: "&cCette commande ne peut être utilisée que par un joueur."
+usage-open: "&cUsage: /kgui open <menu> [joueur]"
+
+# Messages de reload
+config-reloaded: "&aConfiguration rechargée! &7(%items% items, %menus% menus en %time%ms)"
+
+# Messages de menu
+menu-opened: "&aMenu &e%menu% &aouvert."
+menu-opened-for: "&aMenu &e%menu% &aouvert pour &e%player%&a."
+menu-closed: "&7Menu fermé."
+not-allowed-world: "&cVous ne pouvez pas ouvrir ce menu dans ce monde."
+not-allowed-region: "&cVous ne pouvez pas ouvrir ce menu dans cette région."
+
+# Messages de combat
+blocked-in-combat: "&cVous ne pouvez pas ouvrir de menu en combat!"
+closed-combat: "&cVotre menu a été fermé car vous êtes entré en combat!"
+cooldown-after-combat: "&cVeuillez attendre &e%seconds% &csecondes après le combat."
+
+# Messages de requirements
+requirement-no-permission: "&cVous n'avez pas la permission requise: &e%permission%"
+requirement-no-money: "&cVous n'avez pas assez d'argent. Requis: &e%amount%$"
+requirement-no-points: "&cVous n'avez pas assez de points. Requis: &e%amount%"
+requirement-wrong-world: "&cCe bouton n'est pas disponible dans ce monde."
+requirement-wrong-region: "&cCe bouton n'est pas disponible dans cette région."
+requirement-on-cooldown: "&cCette action est en cooldown. Attendez &e%time%&c."
+requirement-missing-item: "&cVous n'avez pas l'item requis."
+requirement-faction-required: "&cVous devez être dans une faction."
+requirement-faction-rank-required: "&cVous devez être &e%rank% &cdans votre faction."
+requirement-faction-power-required: "&cVotre faction doit avoir au moins &e%power% &cde puissance."
+requirement-placeholder-check-failed: "&cCondition non remplie."
+
+# Messages de sécurité
+item-removed: "&7Un item de GUI a été supprimé de votre inventaire."
+auction-blocked: "&cVous ne pouvez pas vendre des items de GUI!"
+
+# Messages de debug
+debug-enabled: "&aMode debug activé pour &e%player%&a."
+debug-disabled: "&7Mode debug désactivé."
+
+# Messages de pagination
+pagination-empty: "&7Aucun contenu à afficher."
+debug-requirement-failed: "&c[Debug] Requirement échoué: &e%type% &c- %reason%"
+debug-action-executed: "&a[Debug] Action exécutée: &e%action%"
+
+# Aide commandes (accès via sendHelp)
+help:
+  header: "&8&m----------&r &6Kgui Commands &8&m----------"
+  footer: "&8&m----------------------------------------"
+  commands:
+    - "&e/kgui &7- Affiche cette aide"
+    - "&e/kgui open <menu> [player] &7- Ouvre un menu"
+    - "&e/kgui reload &7- Recharge la configuration"
+    - "&e/kgui debug [player] &7- Active le mode debug"
+    - "&e/kgui list &7- Liste tous les menus"
+    - "&e/kgui info <menu> &7- Informations sur un menu"
+
+# ==============================================================
+# Messages d'Input (Phase 3)
+# ==============================================================
+
+# Input prompts
+input-prompt: "&e&l%title% &7» &fEntrez votre réponse dans le chat:"
+input-cancelled: "&7Saisie annulée."
+input-success: "&aValeur enregistrée avec succès!"
+
+# Input validation
+input-invalid-number: "&cValeur invalide: &e%value% &cn'est pas un nombre."
+input-number-too-low: "&cLa valeur &e%value% &cest trop basse. Minimum: &e%min%"
+input-number-too-high: "&cLa valeur &e%value% &cest trop haute. Maximum: &e%max%"
+
+# Confirmation dialog
+confirm-title: "&c&lConfirmer: %title%"
+confirm-yes: "&a&l✓ Confirmer"
+confirm-no: "&c&l✗ Annuler"
+confirm-info: "&eÊtes-vous sûr?"

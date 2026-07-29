@@ -1,0 +1,246 @@
+# ==============================================================================
+# KGUI - LOGS DE FACTION - MEMBRES (faction_logs_members.yml)
+# ==============================================================================
+# Menu paginé affichant les logs MEMBRES uniquement
+# Filtre actif: MEMBRES (join/leave/kick/promote/demote)
+# ==============================================================================
+
+title: "&6【 &d&lLogs Membres &6】&8%page%/%max_page%"
+size: 54
+type: paginated
+
+pagination:
+  enabled: true
+  content_slots: "10-16,19-25,28-34,37-43"
+  prev_button_slot: 48
+  next_button_slot: 50
+  provider: "kfaction_logs"
+  provider_args:
+    type: "members"
+
+block_in_combat: true
+cooldown: 1
+update_interval: 40
+
+open_requirements:
+  check_faction:
+    type: has_faction
+    deny_message: "&c✖ Tu dois être dans une faction!"
+  check_permission:
+    type: faction_role
+    role: MODERATOR
+    deny_message: "&c✖ Tu dois être Modérateur minimum!"
+
+items:
+
+  # === BACKGROUNDS ===
+  border_top:
+    slots: "0,8"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  border_sides:
+    slots: "9,17,18,26,27,35,36,44"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  border_bottom:
+    slots: "46,47,51,52,53"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  # === FILTRES (Membres = ACTIF) ===
+  filter_all:
+    slot: 1
+    material: NETHER_STAR
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&f&l★ Tous"
+    lore:
+      - ""
+      - "&7Afficher tous les logs"
+      - ""
+      - "&e▸ Clic pour filtrer"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_logs"
+
+  filter_members:
+    slot: 2
+    material: SKULL_ITEM
+    data: 3
+    glow: true
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&d&l★ Membres"
+    lore:
+      - ""
+      - "&a✔ Filtre actif"
+      - ""
+      - "&7Logs des membres:"
+      - "&8▸ &fJoin / Leave / Kick"
+      - "&8▸ &fPromotions / Rétrogradations"
+
+  filter_territory:
+    slot: 3
+    material: GRASS
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&2&lTerritoire"
+    lore:
+      - ""
+      - "&7Logs du territoire"
+      - ""
+      - "&e▸ Clic pour filtrer"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_logs_territory"
+
+  info_center:
+    slot: 4
+    material: CLAY_BALL
+    cit: gear
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lHistorique"
+    lore:
+      - ""
+      - "&7Filtre: &dMembres"
+      - ""
+      - "&7Les logs sont conservés"
+      - "&7pendant &e36 heures&7."
+
+  filter_economy:
+    slot: 5
+    material: GOLD_INGOT
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&a&lÉconomie"
+    lore:
+      - ""
+      - "&7Logs de la banque"
+      - ""
+      - "&e▸ Clic pour filtrer"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_logs_economy"
+
+  filter_tp:
+    slot: 6
+    material: ENDER_PEARL
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&b&lTéléportation"
+    lore:
+      - ""
+      - "&7Logs des TP"
+      - ""
+      - "&e▸ Clic pour filtrer"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_logs_tp"
+
+  filter_chest:
+    slot: 7
+    material: CHEST
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6&lF-Chest"
+    lore:
+      - ""
+      - "&c⚠ Bientôt disponible"
+    priority: -1
+
+  # === NAVIGATION ===
+  back_button:
+    slot: 45
+    material: ARROW
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&c&l◄ Retour"
+    lore:
+      - ""
+      - "&7Retourner au menu faction"
+    click_actions:
+      - "[sound] CLICK 1.0 0.8"
+      - "[open] faction_menu"
+
+  prev_page:
+    slot: 48
+    material: CLAY_BALL
+    cit: arrow_left1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&l◄ Page Précédente"
+    view_requirements:
+      - "expression: %page% > 1"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[prev_page]"
+
+  prev_page_disabled:
+    slot: 48
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&7◄ Première Page"
+    view_requirements:
+      - "expression: %page% <= 1"
+    priority: -1
+
+  page_info:
+    slot: 49
+    material: PAPER
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lPage %page%/%max_page%"
+    lore:
+      - ""
+      - "&7Filtre: &dMembres"
+
+  next_page:
+    slot: 50
+    material: CLAY_BALL
+    cit: arrow_right1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lPage Suivante ►"
+    view_requirements:
+      - "expression: %page% < %max_page%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[next_page]"
+
+  next_page_disabled:
+    slot: 50
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&7Dernière Page ►"
+    view_requirements:
+      - "expression: %page% >= %max_page%"
+    priority: -1

@@ -1,0 +1,168 @@
+# ═══════════════════════════════════════════════════════════════════
+#  kjobs_main.yml — Menu principal des Métiers (KjobUltimate)
+#  Ouverture: /jobs  /job  /metier  /metiers
+# ═══════════════════════════════════════════════════════════════════
+
+title: "&8⚒ &6&lMétiers &8⚒"
+size: 54
+type: normal
+update_interval: 40
+
+items:
+
+  # ─── Fond ──────────────────────────────────────────────────────
+  background:
+    slots: "0-9,11,12,14,15,17-27,29,30,32,33,35-48,50-53"
+    material: CLAY_BALL
+    cit: BackgroundHebreu2
+    display_name: " "
+    hide_attributes: true
+    kgui_protected: true
+
+  # ─── Ligne 1 : Mineur / Farmeur / Chasseur ─────────────────────
+  job_mineur:
+    slot: 10
+    material: CLAY_BALL
+    cit: mineur
+    display_name: "&b&lMineur"
+    lore:
+      - ""
+      - "&7Extrait les minerais précieux"
+      - "&7des profondeurs."
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&7Niveau: &e%kjob_level_mineur% &8/ &e%kjob_max_level_mineur%"
+      - "&7XP:     &a%kjob_xp_mineur% &8/ &a%kjob_xp_next_mineur%"
+      - "&7Prog:   &e%kjob_percent_mineur%%"
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&e▸ Clic pour voir les détails"
+    hide_attributes: true
+    kgui_protected: true
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] kjobs_detail_mineur"
+
+  job_farmer:
+    slot: 13
+    material: CLAY_BALL
+    cit: farmer
+    display_name: "&a&lFarmeur"
+    lore:
+      - ""
+      - "&7Cultive et récolte les ressources"
+      - "&7naturelles du monde."
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&7Niveau: &e%kjob_level_farmer% &8/ &e%kjob_max_level_farmer%"
+      - "&7XP:     &a%kjob_xp_farmer% &8/ &a%kjob_xp_next_farmer%"
+      - "&7Prog:   &e%kjob_percent_farmer%%"
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&e▸ Clic pour voir les détails"
+    hide_attributes: true
+    kgui_protected: true
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] kjobs_detail_farmer"
+
+  job_hunter:
+    slot: 16
+    material: CLAY_BALL
+    cit: chasseur
+    display_name: "&c&lChasseur"
+    lore:
+      - ""
+      - "&7Traque et élimine les créatures"
+      - "&7hostiles pour en tirer profit."
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&7Niveau: &e%kjob_level_hunter% &8/ &e%kjob_max_level_hunter%"
+      - "&7XP:     &a%kjob_xp_hunter% &8/ &a%kjob_xp_next_hunter%"
+      - "&7Prog:   &e%kjob_percent_hunter%%"
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&e▸ Clic pour voir les détails"
+    hide_attributes: true
+    kgui_protected: true
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] kjobs_detail_hunter"
+
+  # ─── Ligne 3 : Prétorien / Artisant / Pilleur ──────────────────
+  job_pretorien:
+    slot: 28
+    material: CLAY_BALL
+    cit: pretorien
+    display_name: "&6&lPrétorien"
+    lore:
+      - ""
+      - "&7Protège et combat pour la faction,"
+      - "&7en première ligne."
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&7Niveau: &e%kjob_level_pretorien% &8/ &e%kjob_max_level_pretorien%"
+      - "&7XP:     &a%kjob_xp_pretorien% &8/ &a%kjob_xp_next_pretorien%"
+      - "&7Prog:   &e%kjob_percent_pretorien%%"
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&e▸ Clic pour voir les détails"
+    hide_attributes: true
+    kgui_protected: true
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] kjobs_detail_pretorien"
+
+  job_artisant:
+    slot: 31
+    material: CLAY_BALL
+    cit: artisant
+    display_name: "&d&lArtisant"
+    lore:
+      - ""
+      - "&7Fabrique et améliore les équipements"
+      - "&7avec un savoir-faire unique."
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&7Niveau: &e%kjob_level_artisant% &8/ &e%kjob_max_level_artisant%"
+      - "&7XP:     &a%kjob_xp_artisant% &8/ &a%kjob_xp_next_artisant%"
+      - "&7Prog:   &e%kjob_percent_artisant%%"
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&e▸ Clic pour voir les détails"
+    hide_attributes: true
+    kgui_protected: true
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] kjobs_detail_artisant"
+
+  job_pilleur:
+    slot: 34
+    material: CLAY_BALL
+    cit: pilleur
+    display_name: "&5&lPilleur &8[&7À venir&8]"
+    lore:
+      - ""
+      - "&7Pille les territoires ennemis"
+      - "&7et amasse des richesses."
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&c✘ Pas encore disponible"
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+    hide_attributes: true
+    kgui_protected: true
+
+  # ─── Infos joueur (bas centre) ─────────────────────────────────
+  infos:
+    slot: 49
+    material: CLAY_BALL
+    cit: gear
+    display_name: "&e&lMes Informations"
+    lore:
+      - ""
+      - "&7Joueur: &f%player_name%"
+      - "&7Argent: &e%vault_eco_balance_fixed%"
+      - "&7Job actif: &b%kjob_display_job_name%"
+      - "&7Slots: &e%kjob_slots%"
+      - ""
+      - "&8Clic droit: &7/jobs info"
+    hide_attributes: true
+    kgui_protected: true
+    right_click_actions:
+      - "[player] jobs info"
+      - "[close]"
