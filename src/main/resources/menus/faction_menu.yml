@@ -1,0 +1,254 @@
+# ==============================================================================
+# KGUI - MENU FACTION (/f menu)
+# ==============================================================================
+# Menu principal de faction avec design custom SparrowMC
+# 
+# Layout (54 slots = 6 lignes):
+#   Ligne 1: [bg2] [bg2] [bg2] [bg2] [HOME] [bg2] [bg2] [bg2] [bg2]
+#   Ligne 2: [bg2] [bg1] [bg1] [bg1] [bg1]  [bg1] [bg1] [bg1] [bg2]
+#   Ligne 3: [bg2] [LOGS] [bg1] [CLAIMS] [bg1] [PERMS] [bg1] [MEMBRES] [bg2]
+#   Ligne 4: [bg2] [bg1] [bg1] [WARPS] [bg1] [UPGRADES] [bg1] [bg1] [bg2]
+#   Ligne 5: [bg2] [bg1] [bg1] [bg1] [INFO] [bg1] [bg1] [bg1] [bg2]
+#   Ligne 6: [bg2] [bg2] [bg2] [bg2] [FERMER] [bg2] [bg2] [bg2] [bg2]
+#
+# COMMANDE: /f menu
+# ==============================================================================
+
+title: "&6【 &e&lFaction &6】&7%kfaction_faction_name%"
+size: 54
+type: normal
+
+open_commands:
+  - "fmenu"
+
+block_in_combat: true
+cooldown: 2
+update_interval: 20
+
+open_requirements:
+  check_faction:
+    type: has_faction
+    deny_message: "&c✖ Tu dois etre dans une faction pour ouvrir ce menu!"
+
+# ==============================================================================
+# ITEMS
+# ==============================================================================
+items:
+
+  # ============================================================================
+  # BACKGROUNDS - Orange bordures
+  # ============================================================================
+  background:
+    slots: "0,1,2,3,5,6,7,8,9,17,18,26,27,35,36,44,45,46,47,51,52,53"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+    
+  # ============================================================================
+  # BACKGROUNDS - Jaune interieur
+  # ============================================================================
+  background2:
+    slots: "10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,33,34,37,38,39,40,41,42,43,48,50"
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  # ============================================================================
+  # HOME - Info Faction (slot 4)
+  # ============================================================================
+  faction_home:
+    slot: 4
+    material: CLAY_BALL
+    cit: home_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6【 &e&l%kfaction_faction_name% &6】"
+    lore:
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - ""
+      - "&7Banque: &a%kfaction_faction_bank%$"
+      - ""
+      - "&7Claims: &e%kfaction_faction_claims%&7/&e%kfaction_faction_maxclaims%"
+      - "&7Power: &e%kfaction_faction_power%&7/&e%kfaction_faction_maxpower%"
+      - ""
+      - "&7Niveau: &6%kfaction_faction_level%"
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+    priority: 10
+
+  # ============================================================================
+  # LOGS - Historique des actions (slot 19)
+  # ============================================================================
+  faction_logs:
+    slot: 20
+    material: CLAY_BALL
+    cit: logs
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6&lLogs de Faction"
+    lore:
+      - ""
+      - "&7Consulte l'historique des actions"
+      - "&7de ta faction."
+      - ""
+      - "&7Actions loggées:"
+      - "&8▸ &dMembres &7(join/leave/kick)"
+      - "&8▸ &2Territoire &7(claim/unclaim)"
+      - "&8▸ &aÉconomie &7(dépôts/retraits)"
+      - "&8▸ &bTéléportations &7(home/warp)"
+      - ""
+      - "&e▸ Clic pour voir les logs"
+    priority: 10
+    
+    view_requirements:
+      - "faction_role: MODERATOR"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_logs"
+
+  # ============================================================================
+  # CLAIMS - Liste des territoires (slot 21)
+  # ============================================================================
+  faction_claims:
+    slot: 30
+    material: CLAY_BALL
+    cit: checkpoint
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&2&lTerritoires"
+    lore:
+      - ""
+      - "&7Gere les territoires de ta faction."
+      - ""
+      - "&7Claims actuels: &e%kfaction_faction_claims%"
+      - "&7Power disponible: &a%kfaction_faction_power%"
+      - ""
+      - "&8▸ &fVoir les coordonnees"
+      - "&8▸ &fUnclaim des chunks"
+      - ""
+      - "&a▸ Clic pour gerer"
+    priority: 10
+    
+    view_requirements:
+      - "faction_role: COLEADER"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_claims"
+
+  # ============================================================================
+  # PERMISSIONS - Gestion des perms (slot 23)
+  # ============================================================================
+  faction_perms:
+    slot: 49
+    material: CLAY_BALL
+    cit: gear
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lPermissions"
+    lore:
+      - ""
+      - "&7Configure les permissions"
+      - "&7de chaque role dans la faction."
+      - ""
+      - "&7Permissions par role:"
+      - "&8▸ &fRecrue, Membre, Mod, Coleader"
+      - ""
+      - "&c▸ Clic pour configurer"
+    priority: 10
+    
+    view_requirements:
+      - "faction_role: MODERATOR"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_permissions"
+
+  # ============================================================================
+  # MEMBRES - Liste des joueurs (slot 25)
+  # ============================================================================
+  faction_members:
+    slot: 32
+    material: SKULL_ITEM
+    data: 3
+    skull: "%player_name%"
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lMembres"
+    lore:
+      - ""
+      - "&7Consulte la liste des membres"
+      - "&7de ta faction."
+      - ""
+      - "&7Leader: &c%kfaction_faction_leader%"
+      - "&7En ligne: &a%kfaction_faction_online%&7/&f%kfaction_faction_members%"
+      - ""
+      - "&6▸ Clic pour voir"
+    priority: 10
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_members"
+
+  # ============================================================================
+  # WARPS - Teleportations (slot 30)
+  # ============================================================================
+  faction_warps:
+    slot: 22
+    material: CLAY_BALL
+    cit: warpfaction
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&5&lHome & Warps"
+    lore:
+      - ""
+      - "&7Accede aux points de"
+      - "&7teleportation de ta faction."
+      - ""
+      - "&7Options:"
+      - "&8▸ &fAller au F Home"
+      - "&8▸ &fVoir les F Warps"
+      - "&8▸ &fCreer/Supprimer Warps"
+      - ""
+      - "&d▸ Clic pour acceder"
+    priority: 10
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_warps"
+
+  # ============================================================================
+  # UPGRADES - Ameliorations & Skills (slot 32)
+  # ============================================================================
+  faction_upgrades:
+    slot: 24
+    material: CLAY_BALL
+    cit: upgradefaction
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&3&lUpgrades & Skills"
+    lore:
+      - ""
+      - "&7Ameliore ta faction!"
+      - ""
+      - "&7Sections disponibles:"
+      - "&8▸ &eMissions &7- Debloquer des skills"
+      - "&8▸ &aSkills &7- Voir les capacites"
+      - "&8▸ &bAmeliorations &7- Boosts passifs"
+      - ""
+      - "&b▸ Clic pour voir"
+    priority: 10
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_upgrades"

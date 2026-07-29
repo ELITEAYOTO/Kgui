@@ -1,0 +1,159 @@
+# Menu des logs de faction avec Content Provider API
+# Ce menu utilise le provider "kfaction_logs" pour afficher dynamiquement les logs
+
+menu_title: "&8☰ &7Logs de Faction &8| &f%kfaction_name%"
+size: 54
+type: pagination
+
+# Permission requise pour ouvrir le menu
+open_requirements:
+  - type: permission
+    permission: kfaction.logs
+
+# Configuration de la pagination
+pagination:
+  enabled: true
+  content_slots: "10-16,19-25,28-34,37-43"
+  prev_button_slot: 45
+  next_button_slot: 53
+  
+  # === CONTENT PROVIDER API ===
+  provider: "kfaction_logs"
+  # Arguments optionnels pour filtrer les logs
+  # provider_args:
+  #   type: "MEMBER_JOIN"  # Filtrer par type (optionnel)
+  
+  # Message si aucun log
+  empty_message: "&cAucun log récent"
+
+# Items statiques du menu
+items:
+  # Fond
+  background:
+    slots: "0-9,17-18,26-27,35-36,44-53"
+    material: STAINED_GLASS_PANE
+    data: 7
+    name: " "
+  
+  # Bouton retour
+  back_button:
+    slots: [49]
+    material: ARROW
+    name: "&cRetour"
+    lore:
+      - ""
+      - "&7Clic pour revenir au menu principal"
+    click_actions:
+      - "[open] kfaction_menu"
+  
+  # Bouton page précédente
+  prev_button:
+    slots: [45]
+    material: ARROW
+    name: "&ePage précédente"
+    lore:
+      - ""
+      - "&7Page actuelle: &f%page%&7/&f%max_page%"
+      - ""
+      - "&aCliquez pour aller à la page précédente"
+    view_requirements:
+      - type: has_previous_page
+    click_actions:
+      - "[prev_page]"
+  
+  # Placeholder quand pas de page précédente
+  prev_button_disabled:
+    slots: [45]
+    material: STAINED_GLASS_PANE
+    data: 7
+    name: " "
+    view_requirements:
+      - type: "!has_previous_page"
+  
+  # Bouton page suivante
+  next_button:
+    slots: [53]
+    material: ARROW
+    name: "&ePage suivante"
+    lore:
+      - ""
+      - "&7Page actuelle: &f%page%&7/&f%max_page%"
+      - ""
+      - "&aCliquez pour aller à la page suivante"
+    view_requirements:
+      - type: has_next_page
+    click_actions:
+      - "[next_page]"
+  
+  # Placeholder quand pas de page suivante
+  next_button_disabled:
+    slots: [53]
+    material: STAINED_GLASS_PANE
+    data: 7
+    name: " "
+    view_requirements:
+      - type: "!has_next_page"
+  
+  # Indicateur de page
+  page_indicator:
+    slots: [4]
+    material: BOOK
+    name: "&ePage %page%/%max_page%"
+    lore:
+      - ""
+      - "&7Total de logs: &f%total_items%"
+      - ""
+      - "&7Les logs sont conservés"
+      - "&7pendant 36 heures."
+  
+  # Filtres de type (optionnel)
+  filter_all:
+    slots: [0]
+    material: PAPER
+    name: "&eTous les logs"
+    lore:
+      - ""
+      - "&7Afficher tous les types"
+      - ""
+      - "&aCliquez pour ce filtre"
+    click_actions:
+      - "[open] kfaction_logs"
+  
+  filter_members:
+    slots: [1]
+    material: SKULL_ITEM
+    data: 3
+    name: "&eLogs membres"
+    lore:
+      - ""
+      - "&7Rejoindre, quitter, kick"
+      - "&7Promotions, rétrogradations"
+      - ""
+      - "&aCliquez pour ce filtre"
+    click_actions:
+      - "[open] kfaction_logs_members"
+  
+  filter_territory:
+    slots: [2]
+    material: GRASS
+    name: "&eLogs territoire"
+    lore:
+      - ""
+      - "&7Claims, unclaims"
+      - "&7Homes, warps"
+      - ""
+      - "&aCliquez pour ce filtre"
+    click_actions:
+      - "[open] kfaction_logs_territory"
+  
+  filter_economy:
+    slots: [3]
+    material: GOLD_INGOT
+    name: "&eLogs économie"
+    lore:
+      - ""
+      - "&7Dépôts, retraits"
+      - ""
+      - "&aCliquez pour ce filtre"
+    click_actions:
+      - "[open] kfaction_logs_economy"

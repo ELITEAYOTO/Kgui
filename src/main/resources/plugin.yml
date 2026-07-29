@@ -1,0 +1,50 @@
+name: Kgui
+version: ${project.version}
+main: me.krunsh.kgui.Kgui
+author: Krunsh
+description: Moteur de GUI avancé pour serveurs 1.8.8 Faction/PvP
+api-version: 1.8
+
+softdepend:
+  - PlaceholderAPI
+  - Vault
+  - ProtocolLib
+  - WorldGuard
+  - CombatTagPlus
+  - zAuctionHouse
+  - HeadDatabase
+  - PlayerPoints
+  - Factions
+
+commands:
+  kgui:
+    description: Commandes principales de Kgui
+    usage: /<command> [subcommand]
+    permission: kgui.admin
+    aliases: [kg, gui]
+
+permissions:
+  kgui.admin:
+    description: Accès à toutes les commandes admin de Kgui
+    default: op
+  kgui.open:
+    description: Permet d'ouvrir des menus
+    default: true
+  kgui.open.others:
+    description: Permet d'ouvrir des menus pour d'autres joueurs
+    default: op
+  kgui.reload:
+    description: Permet de recharger le plugin
+    default: op
+  kgui.debug:
+    description: Permet d'utiliser le mode debug
+    default: op
+  kgui.bypass.combat:
+    description: Bypass le blocage en combat
+    default: op
+  kgui.bypass.world:
+    description: Bypass le blocage par monde
+    default: op
+  kgui.bypass.cooldown:
+    description: Bypass les cooldowns
+    default: op

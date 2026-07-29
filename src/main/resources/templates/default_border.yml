@@ -1,0 +1,101 @@
+# ==============================================================================
+# KGUI - TEMPLATE DE BORDURE PAR DÉFAUT (default_border.yml)
+# ==============================================================================
+# Ce template définit une bordure standard réutilisable dans tous les menus.
+# Utilisez: template: default_border dans vos menus pour l'appliquer.
+#
+# Les templates permettent de réutiliser des configurations communes.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# ITEMS DU TEMPLATE
+# ------------------------------------------------------------------------------
+items:
+
+  # ============================================================================
+  # BORDURE LIGNE DU HAUT (slots 0-8)
+  # ============================================================================
+  border_top:
+    slots: "0,1,2,3,4,5,6,7,8"
+    material: STAINED_GLASS_PANE
+    data: 15  # Noir
+    display_name: " "
+    
+    # Empêche toute action sur ces items
+    click_actions: []
+
+  # ============================================================================
+  # BORDURE CÔTÉS (gauche et droite)
+  # ============================================================================
+  border_left:
+    slots: "9,18,27,36,45"
+    material: STAINED_GLASS_PANE
+    data: 15
+    display_name: " "
+    click_actions: []
+
+  border_right:
+    slots: "17,26,35,44,53"
+    material: STAINED_GLASS_PANE
+    data: 15
+    display_name: " "
+    click_actions: []
+
+  # ============================================================================
+  # BORDURE LIGNE DU BAS
+  # ============================================================================
+  # Note: Adaptez les slots selon la taille de votre menu
+  # Pour size: 27 -> slots: "18,19,20,21,22,23,24,25,26"
+  # Pour size: 36 -> slots: "27,28,29,30,31,32,33,34,35"
+  # Pour size: 45 -> slots: "36,37,38,39,40,41,42,43,44"
+  # Pour size: 54 -> slots: "45,46,47,48,49,50,51,52,53"
+  
+  border_bottom_54:
+    slots: "45,46,47,48,49,50,51,52,53"
+    material: STAINED_GLASS_PANE
+    data: 15
+    display_name: " "
+    click_actions: []
+
+# ==============================================================================
+# COMMENT UTILISER CE TEMPLATE
+# ==============================================================================
+#
+# Dans votre menu YAML, ajoutez simplement:
+#
+#   title: "&8Mon Menu"
+#   size: 54
+#   template: default_border        # <-- Applique ce template
+#   
+#   items:
+#     mon_item:
+#       slot: 22
+#       material: DIAMOND
+#       ...
+#
+# Le template sera fusionné avec votre menu.
+# Vos items ont priorité sur ceux du template.
+#
+# ==============================================================================
+# VARIANTES DE COULEURS
+# ==============================================================================
+# 
+# Changez la valeur "data" pour différentes couleurs:
+#   0  = Blanc
+#   1  = Orange
+#   2  = Magenta
+#   3  = Bleu clair
+#   4  = Jaune
+#   5  = Vert lime
+#   6  = Rose
+#   7  = Gris
+#   8  = Gris clair
+#   9  = Cyan
+#   10 = Violet
+#   11 = Bleu
+#   12 = Marron
+#   13 = Vert
+#   14 = Rouge
+#   15 = Noir
+#
+# ==============================================================================

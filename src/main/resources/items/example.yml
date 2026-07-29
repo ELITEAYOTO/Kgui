@@ -1,0 +1,120 @@
+# ==============================================================
+# Kgui - Exemple de fichier d'items
+# Ce fichier contient plusieurs items
+# Chaque item peut être référencé par son ID dans les menus
+# ==============================================================
+
+# Item de bordure standard (vitre grise)
+border:
+  material: STAINED_GLASS_PANE
+  data: 7
+  display_name: " "
+  hide_all: true
+  kgui_protected: true
+
+# Item de bordure dorée
+border_gold:
+  material: STAINED_GLASS_PANE
+  data: 4
+  display_name: " "
+  hide_all: true
+  kgui_protected: true
+
+# Bouton fermer
+close_button:
+  material: BARRIER
+  display_name: "&c&lFermer"
+  lore:
+    - ""
+    - "&7Cliquez pour fermer"
+    - "&7ce menu."
+  hide_all: true
+  kgui_protected: true
+
+# Bouton retour
+back_button:
+  material: ARROW
+  display_name: "&e&l◄ Retour"
+  lore:
+    - ""
+    - "&7Retour au menu précédent"
+  hide_all: true
+  kgui_protected: true
+
+# Bouton page précédente
+prev_page:
+  material: SKULL_ITEM
+  data: 3
+  skull_owner: MHF_ArrowLeft
+  display_name: "&e&l◄ Page Précédente"
+  lore:
+    - ""
+    - "&7Cliquez pour aller"
+    - "&7à la page précédente"
+  hide_all: true
+  kgui_protected: true
+
+# Bouton page suivante
+next_page:
+  material: SKULL_ITEM
+  data: 3
+  skull_owner: MHF_ArrowRight
+  display_name: "&e&lPage Suivante ►"
+  lore:
+    - ""
+    - "&7Cliquez pour aller"
+    - "&7à la page suivante"
+  hide_all: true
+  kgui_protected: true
+
+# Indicateur de page (désactivé)
+page_disabled:
+  material: SKULL_ITEM
+  data: 3
+  skull_owner: MHF_Question
+  display_name: "&7&lPas de page"
+  lore:
+    - ""
+    - "&8Aucune page disponible"
+  hide_all: true
+  kgui_protected: true
+
+# Item info placeholder
+info_item:
+  material: BOOK
+  display_name: "&6&lInformations"
+  lore:
+    - ""
+    - "&7Bienvenue dans ce menu!"
+    - ""
+    - "&eJoueur: &f%player_name%"
+    - "&eArgent: &f%vault_eco_balance%$"
+  hide_all: true
+  glow: true
+  kgui_protected: true
+
+# Exemple avec CIT
+azurite_helmet:
+  material: DIAMOND_HELMET
+  display_name: "&b&lCasque Azurite"
+  lore:
+    - ""
+    - "&7Un casque légendaire"
+    - "&7en azurite pure."
+    - ""
+    - "&b✦ Rareté: &eLégendaire"
+  cit: azurite_helmet
+  glow: true
+  hide_attributes: true
+  kgui_protected: false
+
+# Exemple avec HeadDatabase
+custom_head:
+  material: SKULL_ITEM
+  data: 3
+  head_database: "1234"
+  display_name: "&a&lTête Custom"
+  lore:
+    - "&7Une tête personnalisée"
+    - "&7depuis HeadDatabase"
+  kgui_protected: true

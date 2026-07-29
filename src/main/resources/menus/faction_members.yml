@@ -1,0 +1,199 @@
+# ==============================================================================
+# KGUI - MEMBRES DE FACTION (faction_members.yml)
+# ==============================================================================
+# Menu pagine affichant les membres de la faction avec leurs tetes
+# Le contenu dynamique est injecte par Kfaction
+#
+# OUVERTURE: Via faction_menu.yml ou /f roster
+# ==============================================================================
+
+title: "&6【 &e&lMembres &6】&7Page %page%/%max_page%"
+size: 54
+type: paginated
+
+pagination:
+  enabled: true
+  content_slots: "10-16,19-25,28-34"
+  prev_button_slot: 48
+  next_button_slot: 50
+  provider: "kfaction_members"
+
+block_in_combat: true
+cooldown: 2
+update_interval: 20
+
+# ==============================================================================
+# ITEMS
+# ==============================================================================
+items:
+
+  # ============================================================================
+  # BACKGROUNDS - Bordures orange
+  # ============================================================================
+  background:
+    slots: "0,1,2,3,5,6,7,8,9,17,18,26,27,35,36,44,46,47,51,52,53"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+    
+  # ============================================================================
+  # BACKGROUNDS - Jaune central
+  # ============================================================================
+  background2:
+    slots: "37,38,39,40,41,42,43"
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  # ============================================================================
+  # INFO FACTION (slot 4)
+  # ============================================================================
+  faction_info:
+    slot: 4
+    material: CLAY_BALL
+    cit: home_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&l%kfaction_faction_name%"
+    lore:
+      - ""
+      - "&7Membres: &f%kfaction_faction_members%&7/&f%kfaction_faction_maxmembers%"
+      - "&7En ligne: &a%kfaction_faction_online%"
+      - ""
+      - "&7Leader: &c%kfaction_faction_leader%"
+      - ""
+      - "&8Passez sur une tete pour voir les infos"
+
+  # ============================================================================
+  # NAVIGATION - Page precedente
+  # ============================================================================
+  prev_page:
+    slot: 48
+    material: CLAY_BALL
+    cit: arrow_left1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&l◄ Page Precedente"
+    lore:
+      - ""
+      - "&7Page actuelle: &f%page%&7/&f%max_page%"
+      - ""
+      - "&e▸ Clic pour retourner"
+    
+    view_requirements:
+      - "expression: %page% > 1"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[prev_page]"
+
+  # Page precedente desactivee
+  prev_page_disabled:
+    slot: 48
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&7◄ Premiere Page"
+    
+    view_requirements:
+      - "expression: %page% <= 1"
+    priority: -1
+
+  # ============================================================================
+  # INFO PAGE (slot 49)
+  # ============================================================================
+  page_info:
+    slot: 49
+    material: CLAY_BALL
+    cit: gear
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lPage %page%/%max_page%"
+    lore:
+      - ""
+      - "&7Membres dans la faction:"
+      - "&f%kfaction_faction_members%"
+
+  # ============================================================================
+  # NAVIGATION - Page suivante
+  # ============================================================================
+  next_page:
+    slot: 50
+    material: CLAY_BALL
+    cit: arrow_right1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lPage Suivante ►"
+    lore:
+      - ""
+      - "&7Page actuelle: &f%page%&7/&f%max_page%"
+      - ""
+      - "&e▸ Clic pour avancer"
+    
+    view_requirements:
+      - "expression: %page% < %max_page%"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[next_page]"
+
+  # Page suivante desactivee
+  next_page_disabled:
+    slot: 50
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&7Derniere Page ►"
+    
+    view_requirements:
+      - "expression: %page% >= %max_page%"
+    priority: -1
+
+  # ============================================================================
+  # RETOUR (slot 45)
+  # ============================================================================
+  back_button:
+    slot: 45
+    material: ARROW
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&c&l◄ Retour"
+    lore:
+      - ""
+      - "&7Retourner au menu faction"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 0.8"
+      - "[open] faction_menu"
+
+# ==============================================================================
+# TEMPLATE POUR LES MEMBRES (utilise par Kfaction pour injecter les items)
+# ==============================================================================
+# Chaque membre sera affiche comme:
+#   material: SKULL_ITEM
+#   data: 3
+#   skull: <player_name>
+#   display_name: "&e<player_name>"
+#   lore:
+#     - ""
+#     - "&7Role: &f<role>"
+#     - "&7Money: &a<money>$"
+#     - "&7Power: &e<power>/<max_power>"
+#     - ""
+#     - "&7Status: &a<online_status>"
+#     - "&7Derniere co: &f<last_seen>"
+# ==============================================================================

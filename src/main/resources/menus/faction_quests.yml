@@ -1,0 +1,132 @@
+# ==============================================================================
+# KGUI - QUETES FACTION (faction_quests.yml)
+# ==============================================================================
+# Affiche les quetes actives avec progression en temps reel
+# Utilise le content provider "kfaction_quests" pour le contenu dynamique
+#
+# OUVERTURE: Via faction_level.yml ou /f quest
+# CONTENT PROVIDER: kfaction_quests (enregistre par Kfaction)
+# ==============================================================================
+
+title: "&6【 &e&lQuetes Faction &6】"
+size: 54
+type: paginated
+
+block_in_combat: true
+cooldown: 2
+update_interval: 10
+
+pagination:
+  enabled: true
+  content_slots: "20,21,22,23,24"
+  provider: "kfaction_quests"
+  provider_args:
+    type: "active"
+  empty_item:
+    material: BARRIER
+    display_name: "&cAucune quete active"
+    lore:
+      - ""
+      - "&7Selectionnez d'abord une"
+      - "&7categorie avec /f quest <cat>"
+      - ""
+      - "&e▸ Clic pour choisir"
+    click_actions:
+      - "[open] faction_quest_category"
+
+open_requirements:
+  check_faction:
+    type: has_faction
+    deny_message: "&c✖ Tu dois etre dans une faction!"
+
+# ==============================================================================
+# ITEMS
+# ==============================================================================
+items:
+
+  # ============================================================================
+  # BACKGROUNDS
+  # ============================================================================
+  background:
+    slots: "0,1,2,3,5,6,7,8,9,17,18,26,27,35,36,44,46,47,48,50,51,52,53"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+    
+  background2:
+    slots: "10,11,12,13,14,15,16,19,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43"
+    material: CLAY_BALL
+    cit: background_1
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  # ============================================================================
+  # TITRE (slot 4)
+  # ============================================================================
+  title_item:
+    slot: 4
+    material: BOOK_AND_QUILL
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6&l⚡ Quetes Actives"
+    lore:
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - ""
+      - "&7Categorie: &e%kfaction_faction_category%"
+      - "&7Restantes: &e%kfaction_faction_quests_remaining%"
+      - ""
+      - "&7Niveau: &6%kfaction_faction_level%"
+      - "&7XP: &a%kfaction_faction_xp% &7/ &a%kfaction_faction_required_xp%"
+      - "&7%kfaction_faction_progressbar%"
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+    priority: 10
+
+  # ============================================================================
+  # CHANGER CATEGORIE (slot 49)
+  # ============================================================================
+  change_category:
+    slot: 49
+    material: COMPASS
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&3&l☰ Changer Categorie"
+    lore:
+      - ""
+      - "&7Categorie active: &e%kfaction_faction_category%"
+      - ""
+      - "&c⚠ Changer de categorie"
+      - "&creinitialise la progression!"
+      - ""
+      - "&b▸ Clic pour choisir"
+    priority: 10
+    
+    view_requirements:
+      - "faction_role: MODERATOR"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_quest_category"
+
+  # ============================================================================
+  # RETOUR (slot 45)
+  # ============================================================================
+  back_button:
+    slot: 45
+    material: ARROW
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&c&l◄ Retour"
+    lore:
+      - ""
+      - "&7Retourner au niveau faction"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 0.8"
+      - "[open] faction_level"

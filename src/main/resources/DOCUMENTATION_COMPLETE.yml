@@ -1,0 +1,1234 @@
+# ╔═══════════════════════════════════════════════════════════════════════════════╗
+# ║                      KGUI - DOCUMENTATION COMPLETE                             ║
+# ║                  Moteur de GUI Avancé pour Minecraft 1.8.8                     ║
+# ║                            Version 1.0.0                                       ║
+# ╚═══════════════════════════════════════════════════════════════════════════════╝
+#
+# Ce fichier contient TOUTES les options disponibles dans Kgui, 
+# organisées par catégorie avec des exemples détaillés.
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+# TABLE DES MATIÈRES
+# ═══════════════════════════════════════════════════════════════════════════════
+#   1. CONFIGURATION DE BASE D'UN MENU
+#   2. TYPES DE MENUS
+#   3. DÉFINITION DES ITEMS
+#   4. SLOTS ET POSITIONS
+#   5. ITEMS DEPUIS LE REGISTRY
+#   6. ITEMS CIT (TEXTURES CUSTOM)
+#   7. ACTIONS (click_actions)
+#   8. REQUIREMENTS (CONDITIONS)
+#   9. PLACEHOLDERS
+#   10. PAGINATION
+#   11. SONS
+#   12. TEMPLATES ET HÉRITAGE
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                    1. CONFIGURATION DE BASE D'UN MENU
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Voici toutes les options disponibles à la racine d'un fichier menu:
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# TITRE DU MENU
+# ─────────────────────────────────────────────────────────────────────────────────
+# Le titre affiché en haut du menu (max 32 caractères après parsing)
+# Supporte les codes couleurs et les placeholders
+title: "&8☰ &6&lMon Menu &8☰"
+
+# Exemples de titres avec placeholders:
+#   title: "&eProfil de %player_name%"
+#   title: "&8Boutique &7- Page %page%/%max_page%"   # Pour menus paginés
+#   title: "&7Argent: &a%vault_eco_balance%$"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# TAILLE DU MENU
+# ─────────────────────────────────────────────────────────────────────────────────
+# Nombre de slots - DOIT être un multiple de 9
+# Valeurs valides: 9, 18, 27, 36, 45, 54
+size: 54
+
+# Correspondance lignes/slots:
+#   9  slots = 1 ligne
+#   18 slots = 2 lignes
+#   27 slots = 3 lignes
+#   36 slots = 4 lignes
+#   45 slots = 5 lignes
+#   54 slots = 6 lignes (maximum)
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# TYPE DE MENU
+# ─────────────────────────────────────────────────────────────────────────────────
+# Types disponibles: normal, paginated, scroll
+type: normal
+
+# - normal: Menu statique classique
+# - paginated: Menu avec plusieurs pages navigables (voir section 10)
+# - scroll: Menu avec défilement vertical (ligne par ligne)
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# COMMANDES D'OUVERTURE
+# ─────────────────────────────────────────────────────────────────────────────────
+# Commande unique pour ouvrir le menu
+open_command: 'menu'
+
+# OU plusieurs commandes (alias)
+open_commands:
+  - 'menu'
+  - 'gui'
+  - 'main'
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PERMISSION
+# ─────────────────────────────────────────────────────────────────────────────────
+# Permission requise pour ouvrir le menu (optionnel)
+permission: 'kgui.menu.exemple'
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# ACTIONS D'OUVERTURE ET FERMETURE
+# ─────────────────────────────────────────────────────────────────────────────────
+# Actions exécutées automatiquement à l'ouverture
+open_actions:
+  - '[sound] LEVEL_UP 1.0 1.0'
+  - '[message] &aMenu ouvert!'
+
+# Actions exécutées automatiquement à la fermeture
+close_actions:
+  - '[sound] CHEST_CLOSE 1.0 1.0'
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# REQUIREMENTS D'OUVERTURE
+# ─────────────────────────────────────────────────────────────────────────────────
+# Conditions requises pour ouvrir le menu
+open_requirements:
+  check_faction:
+    type: has_faction
+    deny_message: "&cTu dois être dans une faction!"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# RESTRICTIONS DE MONDE
+# ─────────────────────────────────────────────────────────────────────────────────
+# Liste BLANCHE - Menu accessible SEULEMENT dans ces mondes
+allowed_worlds:
+  - 'world'
+  - 'world_nether'
+
+# OU Liste NOIRE - Menu NON accessible dans ces mondes
+blocked_worlds:
+  - 'world_event'
+  - 'world_pvp'
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# RESTRICTIONS WORLDGUARD (si plugin installé)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Ouvrir automatiquement le menu quand le joueur entre dans une région
+open_on_region_enter:
+  - 'spawn'
+  - 'shop_zone'
+
+# Régions autorisées (liste blanche)
+allowed_regions:
+  - 'spawn'
+
+# Régions bloquées (liste noire)
+blocked_regions:
+  - 'pvp_arena'
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# BLOCAGE EN COMBAT (si CombatTagPlus installé)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Empêche d'ouvrir le menu si le joueur est en combat
+block_in_combat: true
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# COOLDOWN
+# ─────────────────────────────────────────────────────────────────────────────────
+# Délai minimum (en secondes) entre deux ouvertures du menu
+cooldown: 5
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# INTERVALLE DE MISE À JOUR (AUTO-REFRESH)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Rafraîchit automatiquement le menu toutes les X ticks (20 ticks = 1 seconde)
+# Utile pour les menus avec des placeholders dynamiques (argent, temps, etc.)
+update_interval: 20
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# HÉRITAGE DE TEMPLATE
+# ─────────────────────────────────────────────────────────────────────────────────
+# Hérite les items et propriétés d'un template
+extends: 'default_border'
+# OU
+inherit_from: 'default_border'
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                           2. TYPES DE MENUS
+# ███████████████████████████████████████████████████████████████████████████████
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# MENU NORMAL (type: normal)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Menu statique sans pagination. C'est le type par défaut.
+# Tous les items sont affichés directement.
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# MENU PAGINÉ (type: paginated)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Menu avec plusieurs pages. Nécessite une section 'pagination':
+exemple_menu_pagine:
+  title: "&8Boutique &7Page %page%/%max_page%"
+  size: 54
+  type: paginated
+  
+  pagination:
+    enabled: true
+    content_slots: '10-16,19-25,28-34'  # Slots où les items dynamiques apparaissent
+    prev_button_slot: 48                 # Slot du bouton "page précédente"
+    next_button_slot: 50                 # Slot du bouton "page suivante"
+    max_pages: 5                         # Nombre total de pages (optionnel)
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# MENU SCROLL (type: scroll)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Défilement vertical ligne par ligne.
+# IMPORTANT:
+# - Ajoutez des boutons avec [scroll_up] et [scroll_down]
+# - Définissez max_pages pour les menus statiques conditionnés par %page%
+# - Avec provider, max_pages est calculé automatiquement via le contenu
+exemple_menu_scroll:
+  title: "&8Liste défilante &7%page%/%max_page%"
+  size: 54
+  type: scroll
+  content_slots: '10-16,19-25,28-34'
+  max_pages: 3
+
+  items:
+    scroll_up_button:
+      slot: 48
+      material: ARROW
+      name: "&e▲ Monter"
+      click_actions:
+        - "[scroll_up]"
+
+    scroll_down_button:
+      slot: 50
+      material: ARROW
+      name: "&e▼ Descendre"
+      click_actions:
+        - "[scroll_down]"
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                          3. DÉFINITION DES ITEMS
+# ███████████████████████████████████████████████████████████████████████████████
+
+items:
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ITEM INLINE (définition complète dans le menu)
+  # ═══════════════════════════════════════════════════════════════════════════
+  exemple_item_complet:
+    # ─── POSITION ───
+    slot: 22                    # Un seul slot
+    # OU
+    slots: [10, 11, 12]         # Plusieurs slots (liste)
+    # OU
+    slots: '10-16,19-25'        # Plusieurs slots (format string)
+    
+    # ─── MATÉRIAU ───
+    material: DIAMOND_SWORD     # Nom du Material Minecraft
+    
+    # ─── DATA VALUE ───
+    # Pour les items avec sous-types (laine, teintures, etc.)
+    data: 0
+    
+    # Exemples de data values courants:
+    #   WOOL: 0=blanc, 1=orange, 2=magenta, 3=bleu clair, 4=jaune, 5=vert lime
+    #         6=rose, 7=gris, 8=gris clair, 9=cyan, 10=violet, 11=bleu
+    #         12=marron, 13=vert, 14=rouge, 15=noir
+    #   STAINED_GLASS_PANE: mêmes valeurs que WOOL
+    #   INK_SACK (teintures): 0=noir, 1=rouge, 2=vert, 3=marron, 4=lapis
+    #   SKULL_ITEM: 0=squelette, 1=wither, 2=zombie, 3=joueur, 4=creeper
+    
+    # ─── NOM D'AFFICHAGE ───
+    display_name: "&e&lMon Item &7(Niveau %player_level%)"
+    # OU
+    name: "&e&lMon Item"        # Alias pour display_name
+    
+    # ─── LORE (DESCRIPTION) ───
+    lore:
+      - ""                                    # Ligne vide
+      - "&7Description de l'item"
+      - "&7avec plusieurs lignes"
+      - ""
+      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
+      - "&7Prix: &a100$"
+      - "&7Stock: &e%shop_stock%"
+      - ""
+      - "&e➤ Clic gauche pour acheter"
+      - "&e➤ Clic droit pour vendre"
+    
+    # ─── QUANTITÉ ───
+    amount: 1                   # Fixe
+    # OU
+    amount: "%player_level%"    # Dynamique avec placeholder
+    
+    # ─── EFFETS VISUELS ───
+    glow: true                  # Effet brillant (enchanté sans texte)
+    
+    # ─── CIT INLINE (Textures Custom) ───
+    # Applique directement une texture custom à l'item
+    cit: azurite_sword
+    # OU
+    cit_key: azurite_sword      # Alias
+    
+    # ─── CRÂNES DE JOUEUR ───
+    # Pour SKULL_ITEM avec data: 3
+    skull: "%player_name%"      # Tête du joueur actuel
+    # OU
+    skull_owner: "MHF_ArrowRight"  # Alias - Têtes prédéfinies Minecraft
+    
+    # ─── HEAD DATABASE (si plugin installé) ───
+    head_database: "1234"       # ID HeadDatabase
+    # OU
+    hdb: "1234"                 # Alias
+    
+    # ─── CACHER LES ATTRIBUTS ───
+    hide_attributes: true       # Cache les stats (+5 Attack Damage, etc.)
+    hide_enchants: true         # Cache les enchantements visibles
+    
+    # ─── PROTECTION ───
+    kgui_protected: true        # Empêche de prendre l'item (défaut: true)
+    
+    # ─── PRIORITÉ ───
+    # Si plusieurs items sont sur le même slot, celui avec la plus haute
+    # priorité ET qui passe les view_requirements sera affiché
+    priority: 10
+    
+    # ─── CONDITIONS D'AFFICHAGE ───
+    # L'item n'apparaît que si TOUTES les conditions sont remplies
+    # (Voir section 8 pour tous les types de requirements)
+    view_requirements:
+      - "permission: kgui.vip"
+      - "money: 100"
+    
+    # ─── CONDITIONS DE CLIC ───
+    # Le clic ne fonctionne que si les conditions sont remplies
+    click_requirements:
+      - "money: 50"
+      - "points: 50"
+    
+    # ─── ACTIONS AU CLIC ───
+    # (Voir section 7 pour toutes les actions disponibles)
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[message] &aTu as cliqué!"
+    
+    # Actions spécifiques par type de clic
+    left_click_actions:
+      - "[message] &aClic gauche!"
+    
+    right_click_actions:
+      - "[message] &eClic droit!"
+    
+    shift_click_actions:
+      - "[message] &bShift + clic!"
+    
+    middle_click_actions:
+      - "[message] &dMolette!"
+    
+    # Actions si les click_requirements ne sont pas remplis
+    deny_actions:
+      - "[message] &cTu ne peux pas faire ça!"
+      - "[sound] VILLAGER_NO 1.0 1.0"
+    
+    # ─── COOLDOWN DE CLIC ───
+    cooldown: 5                 # Secondes entre deux clics
+    
+    # ─── MISE À JOUR ───
+    update: true                # Se met à jour avec update_interval du menu
+    
+    # ─── ANIMATION ───
+    animation: "sparkle"        # ID d'une animation définie
+
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # ITEM DEPUIS LE REGISTRY (réutilisable)
+  # ═══════════════════════════════════════════════════════════════════════════
+  exemple_item_registry:
+    slot: 0
+    item_id: 'border'           # Référence un item dans items/*.yml
+    # OU
+    item: 'close_button'        # Alias pour item_id
+    
+    # Les click_actions peuvent être définies ici (override le registry)
+    click_actions:
+      - "[close]"
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                         4. SLOTS ET POSITIONS
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Disposition des slots dans un inventaire 54 slots (6 lignes):
+#
+#    [ 0  1  2  3  4  5  6  7  8 ]  <- Ligne 1
+#    [ 9 10 11 12 13 14 15 16 17 ]  <- Ligne 2
+#    [18 19 20 21 22 23 24 25 26 ]  <- Ligne 3
+#    [27 28 29 30 31 32 33 34 35 ]  <- Ligne 4
+#    [36 37 38 39 40 41 42 43 44 ]  <- Ligne 5
+#    [45 46 47 48 49 50 51 52 53 ]  <- Ligne 6
+
+# Formats acceptés pour les slots:
+
+# Format 1: Slot unique (entier)
+slot: 22
+
+# Format 2: Liste de slots
+slots: [0, 1, 2, 3, 4, 5, 6, 7, 8]
+
+# Format 3: String avec ranges et virgules
+slots: '0-8'                    # Slots 0 à 8
+slots: '0-8,45-53'              # Slots 0-8 ET 45-53
+slots: '10-16,19-25,28-34'      # Grille 3x7 au centre
+slots: '0,8,45,53'              # Coins uniquement
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                      5. ITEMS DEPUIS LE REGISTRY
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Les items du registry sont définis dans le dossier plugins/Kgui/items/
+# Fichier: items/example.yml
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# EXEMPLE DE FICHIER items/custom_items.yml
+# ─────────────────────────────────────────────────────────────────────────────────
+
+# Items simples
+border:
+  material: STAINED_GLASS_PANE
+  data: 7                       # Gris
+  display_name: " "             # Espace = pas de nom visible
+  hide_all: true                # Cache tous les attributs
+  kgui_protected: true          # Protection anti-duplication
+
+close_button:
+  material: BARRIER
+  display_name: "&c&lFermer"
+  lore:
+    - ""
+    - "&7Cliquez pour fermer"
+  hide_all: true
+  kgui_protected: true
+
+back_button:
+  material: ARROW
+  display_name: "&e&l◄ Retour"
+  hide_all: true
+  kgui_protected: true
+
+# Item avec CIT
+epee_azurite:
+  material: DIAMOND_SWORD
+  display_name: "&b&lÉpée Azurite"
+  lore:
+    - ""
+    - "&7Une épée légendaire"
+    - "&7en azurite pure."
+  cit: azurite_sword            # Tag CIT pour texture custom
+  glow: true
+  hide_attributes: true
+  kgui_protected: false         # Peut être donné au joueur
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PROPRIÉTÉS DISPONIBLES DANS LE REGISTRY
+# ─────────────────────────────────────────────────────────────────────────────────
+
+exemple_complet_registry:
+  material: DIAMOND              # Requis
+  data: 0                        # Sous-type
+  amount: 1                      # Quantité par défaut
+  
+  display_name: "&eNom"          # Nom d'affichage
+  # OU
+  name: "&eNom"                  # Alias
+  
+  lore:                          # Description
+    - "&7Ligne 1"
+    - "&7Ligne 2"
+  
+  # Enchantements
+  enchantments:
+    DURABILITY: 1
+    DAMAGE_ALL: 5
+    
+  # Flags d'affichage
+  hide_enchants: true            # Cache "Durabilité I"
+  hide_attributes: true          # Cache les stats (+5 Attack Damage)
+  hide_all: true                 # Cache TOUT
+  
+  glow: true                     # Effet brillant
+  unbreakable: true              # Incassable
+  
+  # Crânes
+  skull_owner: "Notch"
+  # OU
+  skull: "Notch"                 # Alias
+  skull_texture: "eyJ0ZXh0..."   # Texture Base64 (Minecraft-Heads.com)
+  head_database: "1234"
+  # OU
+  hdb: "1234"
+  
+  # NBT Custom
+  nbt:
+    custom_tag: "valeur"
+    niveau: 5
+    is_special: true
+    
+  # CIT (voir section 6)
+  cit: "nom_du_cit"
+  # OU
+  cit_key: "nom_du_cit"
+  
+  # Protection
+  kgui_protected: true           # Empêche de prendre l'item
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                    6. ITEMS CIT (TEXTURES CUSTOM)
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Les CIT (Custom Item Textures) permettent d'afficher des textures custom
+# sur les items en utilisant un resource pack avec OptiFine/MCPatcher.
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# COMMENT ÇA MARCHE
+# ─────────────────────────────────────────────────────────────────────────────────
+# 1. Le plugin ajoute un tag NBT "sparrowmc-item" à l'item
+# 2. Le resource pack détecte ce tag et applique la texture correspondante
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# MÉTHODE 1: DANS LE REGISTRY (items/*.yml)
+# ─────────────────────────────────────────────────────────────────────────────────
+epee_topaze:
+  material: DIAMOND_SWORD         # Type de base Minecraft
+  display_name: "&6&lÉpée Topaze"
+  cit: topaze_sword               # Nom du CIT dans le resource pack
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# MÉTHODE 2: INLINE DANS UN MENU (menus/*.yml)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Vous pouvez aussi utiliser cit directement dans les items du menu:
+items:
+  mon_item_cit:
+    slot: 22
+    material: CLAY_BALL
+    cit: home_1                   # <- CIT inline!
+    display_name: "&eAccueil"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# STRUCTURE DU RESOURCE PACK
+# ─────────────────────────────────────────────────────────────────────────────────
+# assets/minecraft/mcpatcher/cit/Sword/topaze/topaze_sword.properties:
+#
+#   type=item
+#   items=276                     # ID Minecraft de DIAMOND_SWORD
+#   texture=topaze_sword.png      # Fichier texture dans le même dossier
+#   nbt.sparrowmc-item=topaze_sword   # <-- Doit correspondre à "cit: topaze_sword"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# CIT DISPONIBLES (SparrowMC Pack)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Backgrounds: background_1, background_2, background_3, background_4, background_5
+# Icons: home_1, gear, quest, poulet, gris_trophy
+# Épées: azurite_sword, topaze_sword, saphir_sword, gilgamesh_sword, necrotique_sword
+# Armures: azurite_helmet, topaze_helmet, gilgamesh_helmet, etc.
+# Outils: pickaxe_azurite, axe_topaze, shovel_netherite, etc.
+# Clés: key_basic, key_rare, key_legendary, key_mythic
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                          7. ACTIONS (click_actions)
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Format: [type] argument
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# COMMANDES
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_commandes:
+  # Exécute une commande EN TANT QUE joueur
+  - "[player] spawn"
+  - "[player] kit daily"
+  
+  # Exécute une commande depuis la CONSOLE
+  - "[console] give %player_name% diamond 1"
+  - "[console] eco give %player_name% 100"
+  
+  # Exécute avec permissions OP temporaires (ATTENTION: dangereux!)
+  - "[op] gamemode creative"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# MESSAGES
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_messages:
+  # Message privé au joueur
+  - "[message] &aBonjour %player_name%!"
+  - "[message] &7Tu as &a%vault_eco_balance%$ &7sur ton compte."
+  
+  # Message à tout le serveur
+  - "[broadcast] &e%player_name% a acheté un kit VIP!"
+  
+  # Fait parler le joueur (dit dans le chat)
+  - "[chat] Salut tout le monde!"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# INTERFACE
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_interface:
+  # Affiche un titre
+  # Format: titre;sous-titre;fadeIn;stay;fadeOut (en ticks, 20 ticks = 1 seconde)
+  - "[title] &6&lBienvenue!;&7Profite bien;10;70;20"
+  
+  # Affiche un message dans l'action bar
+  - "[actionbar] &aItem acheté avec succès!"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# SONS
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_sons:
+  # Format: NOM_DU_SON volume pitch
+  - "[sound] CLICK 1.0 1.0"
+  - "[sound] LEVEL_UP 1.0 1.2"
+  - "[sound] ORB_PICKUP 1.0 0.5"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# NAVIGATION ENTRE MENUS
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_navigation:
+  # Ferme le menu actuel
+  - "[close]"
+  
+  # Ouvre un autre menu
+  - "[open] shop"
+  - "[open_menu] faction_menu"    # Alias
+  
+  # Retour au menu précédent (historique)
+  - "[back]"
+  
+  # Rafraîchit le menu actuel (recharge les placeholders)
+  - "[refresh]"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PAGINATION
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_pagination:
+  # Page précédente
+  - "[prev_page]"
+  
+  # Page suivante
+  - "[next_page]"
+  
+  # Aller à une page spécifique
+  - "[set_page] 1"
+  - "[set_page] 5"
+  
+  # Scroll (pour type: scroll)
+  - "[scroll_up]"
+  - "[scroll_down]"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# ÉCONOMIE (nécessite Vault)
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_economie:
+  # Retire de l'argent
+  - "[take_money] 100"
+  - "[take_money] %prix_item%"    # Avec placeholder
+  
+  # Donne de l'argent
+  - "[give_money] 50"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# POINTS (nécessite PlayerPoints)
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_points:
+  # Retire des points
+  - "[take_points] 100"
+  
+  # Donne des points
+  - "[give_points] 50"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# TÉLÉPORTATION
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_teleport:
+  # Format: monde;x;y;z
+  - "[teleport] world;100;64;-50"
+  
+  # Format: x;y;z (monde actuel)
+  - "[teleport] 0;100;0"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# DÉLAI
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_delay:
+  # Ajoute un délai AVANT les actions suivantes (en ticks, 20 = 1 seconde)
+  - "[message] &ePréparation..."
+  - "[delay] 40"                  # 2 secondes
+  - "[message] &a3..."
+  - "[delay] 20"
+  - "[message] &aGO!"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# SAISIE UTILISATEUR (INPUT)
+# ─────────────────────────────────────────────────────────────────────────────────
+click_actions_input:
+  # Demande une saisie texte
+  # Format: nom_variable;Titre du prompt;valeur_par_défaut
+  - "[input_text] montant;Entrez le montant;100"
+  
+  # Demande un nombre
+  # Format: nom_variable;Titre;min;max;valeur_par_défaut
+  - "[input_number] quantite;Quantité à acheter;1;64;1"
+  
+  # Dialogue de confirmation
+  # Format: action_si_confirme;Titre;Description
+  - "[confirm] [console] give %player_name% diamond 1;Confirmer l'achat?;Ceci coûtera 100$"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# ACTIONS KFACTION (Intégration Faction)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Ces actions permettent d'interagir avec le plugin Kfaction depuis les menus GUI.
+# Elles ferment automatiquement le menu avant d'exécuter la commande.
+
+click_actions_kfaction:
+  # === TERRITOIRE ===
+  - "[f_claim]"                   # Claim le chunk actuel
+  - "[f_unclaim]"                 # Unclaim le chunk actuel
+  - "[f_home]"                    # Téléportation au home faction
+  - "[f_sethome]"                 # Définir le home faction
+  
+  # === GESTION DES MEMBRES ===
+  - "[f_invite] nom_joueur"       # Inviter un joueur
+  - "[f_kick] nom_joueur"         # Expulser un membre
+  - "[f_promote] nom_joueur"      # Promouvoir un membre
+  - "[f_demote] nom_joueur"       # Rétrograder un membre
+  - "[f_leave]"                   # Quitter la faction
+  - "[f_disband]"                 # Dissoudre la faction
+  
+  # === RELATIONS ===
+  - "[f_ally] nom_faction"        # Proposer une alliance
+  - "[f_enemy] nom_faction"       # Déclarer ennemi
+  - "[f_neutral] nom_faction"     # Relation neutre
+  
+  # === ÉCONOMIE FACTION ===
+  - "[f_deposit] 100"             # Déposer de l'argent
+  - "[f_withdraw] 50"             # Retirer de l'argent
+  
+  # === WARPS FACTION ===
+  - "[f_warp] nom_warp"           # Se téléporter à un warp faction
+  - "[f_setwarp] nom_warp"        # Créer un warp faction
+  - "[f_delwarp] nom_warp"        # Supprimer un warp faction
+  
+  # === CHAT FACTION ===
+  - "[f_chat] f"                  # Chat faction
+  - "[f_chat] a"                  # Chat alliance
+  - "[f_chat] p"                  # Chat public
+  
+  # === MENUS ===
+  - "[f_menu]"                    # Ouvre le menu faction principal
+  - "[f_menu] members"            # Ouvre un menu spécifique
+  
+  # === INFOS ===
+  - "[f_show]"                    # Affiche les infos de sa faction
+  - "[f_show] nom_faction"        # Affiche les infos d'une faction
+
+# Exemples pratiques:
+faction_claim_button:
+  slot: 22
+  material: GRASS
+  display_name: "&a&lClaim ce chunk"
+  click_requirements:
+    - "faction_role: MODERATOR"   # Doit être modérateur minimum
+  click_actions:
+    - "[f_claim]"
+    - "[message] &aChunk claim avec succès!"
+  deny_actions:
+    - "[message] &cTu n'as pas la permission de claim!"
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                         8. REQUIREMENTS (CONDITIONS)
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Les requirements permettent de conditionner l'affichage ou le clic d'un item.
+# Deux types: view_requirements (affichage) et click_requirements (clic)
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# FORMAT STRING LIST (SIMPLE)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Format: "type: valeur"
+
+view_requirements:
+  # Permission
+  - "permission: kgui.vip"
+  - "has_permission: kgui.admin"       # Alias
+  
+  # Argent (Vault)
+  - "money: 100"
+  - "has_money: 500.50"                # Alias
+  
+  # Points (PlayerPoints)
+  - "points: 50"
+  - "has_points: 100"                  # Alias
+  
+  # Faction (Kfaction)
+  - "has_faction: true"
+  - "in_faction: true"                 # Alias
+  
+  # Rôle Faction (Kfaction)
+  - "faction_role: MODERATOR"          # Doit avoir ce rôle minimum
+  # Rôles: RECRUIT < MEMBER < MODERATOR < COLEADER < LEADER
+  
+  # Power Faction (Kfaction)
+  - "faction_power: 50"                # La faction doit avoir au moins 50 power
+  
+  # Monde
+  - "world: world"
+  - "in_world: world_nether"           # Alias
+  
+  # Région WorldGuard
+  - "region: spawn"
+  - "in_region: shop_zone"             # Alias
+  
+  # Combat (CombatTagPlus)
+  - "not_in_combat: true"
+  
+  # Niveau d'expérience
+  - "level: 30"
+  
+  # Total d'XP
+  - "exp: 1000"
+  
+  # Gamemode
+  - "gamemode: SURVIVAL"
+  - "gamemode: CREATIVE"
+  
+  # OP
+  - "is_op: true"
+  
+  # Expressions (comparaisons dynamiques)
+  - "expression: %page% > 1"
+  - "expression: %vault_eco_balance% >= 100"
+  - "expression: %player_level% < 50"
+  - "placeholder_number: %kgui_page% >= 1"
+  
+  # JavaScript (alias pour expression)
+  - "javascript: %faction_power% >= 100"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# FORMAT OBJECT (DÉTAILLÉ)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Pour des conditions plus complexes avec messages personnalisés
+
+view_requirement:
+  type: 'permission'
+  permission: 'kgui.vip'
+
+# OU avec plusieurs conditions:
+view_requirements:
+  check_vip:
+    type: permission
+    permission: kgui.vip
+    deny_message: "&cTu dois être VIP pour voir cet item!"
+    
+  check_money:
+    type: money
+    amount: 100
+    deny_message: "&cTu as besoin de &e100$ &cpour voir ceci."
+    
+  check_level:
+    type: level
+    level: 10
+    deny_message: "&cNiveau 10 minimum requis."
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# EXPRESSIONS (CONDITIONS DYNAMIQUES)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Utilisez "expression:" ou "javascript:" pour des conditions avec placeholders
+
+view_requirement:
+  type: 'expression'
+  expression: '%page% > 1'
+
+# Opérateurs supportés dans les expressions:
+#   >    supérieur à
+#   <    inférieur à
+#   >=   supérieur ou égal
+#   <=   inférieur ou égal
+#   ==   égal (nombre ou texte)
+#   !=   différent
+#   equals    égalité de texte (insensible à la casse)
+#   contains  contient (texte)
+
+# Exemples d'expressions:
+#   "%page% > 1"                    # Page supérieure à 1
+#   "%vault_eco_balance% >= 1000"   # Plus de 1000$
+#   "%player_level% < 30"           # Niveau inférieur à 30
+#   "%factions_faction_name% equals Wilderness"  # Pas de faction
+#   "%player_name% contains Admin"  # Nom contient "Admin"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# TOUS LES TYPES DE REQUIREMENTS
+# ─────────────────────────────────────────────────────────────────────────────────
+
+# | Type              | Description                           | Paramètres            |
+# |-------------------|---------------------------------------|------------------------|
+# | permission        | A la permission                       | permission: "xxx"      |
+# | money             | A assez d'argent (Vault)              | amount: 100            |
+# | points            | A assez de points (PlayerPoints)      | amount: 50             |
+# | has_faction       | Est dans une faction                  | (aucun)                |
+# | faction_role      | A le rôle minimum dans faction        | role: "MODERATOR"      |
+# | faction_power     | Puissance faction minimum             | power: 50              |
+# | world             | Est dans le monde                     | world: "world"         |
+# | region            | Est dans la région (WorldGuard)       | region: "spawn"        |
+# | not_in_combat     | N'est pas en combat (CombatTag)       | (aucun)                |
+# | level             | Niveau d'XP minimum                   | level: 30              |
+# | exp               | XP total minimum                      | exp: 1000              |
+# | gamemode          | Mode de jeu                           | gamemode: "SURVIVAL"   |
+# | is_op             | Est opérateur                         | (aucun)                |
+# | placeholder_equals| Placeholder égal à valeur             | placeholder, value     |
+# | placeholder_contains| Placeholder contient valeur         | placeholder, value     |
+# | placeholder_number| Comparaison numérique                 | placeholder, operator, value |
+# | expression        | Expression conditionnelle             | expression: "..."      |
+# | javascript        | Alias pour expression                 | expression: "..."      |
+# | string_equals     | Comparaison de strings                | input, output          |
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                            9. PLACEHOLDERS
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Les placeholders sont remplacés dynamiquement par leurs valeurs.
+# Ils peuvent être utilisés dans: title, display_name, lore, click_actions, etc.
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PLACEHOLDERS INTERNES KGUI
+# ─────────────────────────────────────────────────────────────────────────────────
+# %player%              -> Nom du joueur
+# %player_name%         -> Nom du joueur
+# %player_displayname%  -> Nom d'affichage du joueur
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PLACEHOLDERS DE PAGINATION
+# ─────────────────────────────────────────────────────────────────────────────────
+# %page%                -> Numéro de la page actuelle
+# %max_page%            -> Nombre total de pages
+# %total_pages%         -> Alias pour %max_page%
+# %kgui_page%           -> Alias pour %page%
+# %kgui_max_page%       -> Alias pour %max_page%
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PLACEHOLDERS DE SCROLL
+# ─────────────────────────────────────────────────────────────────────────────────
+# %scroll_offset%       -> Offset actuel (0-indexé)
+# %scroll_max%          -> Offset maximum
+# %kgui_scroll%         -> Alias pour %scroll_offset%
+# %kgui_scroll_max%     -> Alias pour %scroll_max%
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PLACEHOLDERS KFACTION (si installé)
+# ─────────────────────────────────────────────────────────────────────────────────
+# %kfaction_faction_name%       -> Nom de la faction
+# %kfaction_faction_tag%        -> Tag de la faction
+# %kfaction_faction_role%       -> Rôle du joueur
+# %kfaction_faction_power%      -> Puissance actuelle
+# %kfaction_faction_maxpower%   -> Puissance maximum
+# %kfaction_faction_claims%     -> Nombre de claims
+# %kfaction_faction_maxclaims%  -> Claims maximum
+# %kfaction_faction_bank%       -> Banque de faction
+# %kfaction_faction_level%      -> Niveau de faction
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# PLACEHOLDERS PLACEHOLDERAPI (si installé)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Tous les placeholders de PlaceholderAPI sont supportés!
+
+# Vault (Économie):
+#   %vault_eco_balance%         -> Solde du joueur
+#   %vault_eco_balance_formatted% -> Solde formaté
+#   %vault_prefix%              -> Préfixe de rang
+
+# PlayerPoints:
+#   %playerpoints_points%       -> Points du joueur
+
+# Et des centaines d'autres! Voir: https://wiki.placeholderapi.com/users/placeholder-list/
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                              10. PAGINATION
+# ███████████████████████████████████████████████████████████████████████████████
+
+# La pagination permet de créer des menus avec plusieurs pages.
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# CONFIGURATION COMPLÈTE
+# ─────────────────────────────────────────────────────────────────────────────────
+exemple_pagination:
+  title: "&8Boutique &7- Page %page%/%max_page%"
+  size: 54
+  type: paginated
+  
+  # Configuration de la pagination
+  pagination:
+    enabled: true
+    content_slots: '10-16,19-25,28-34'
+    prev_button_slot: 48
+    next_button_slot: 50
+    max_pages: 5                # Optionnel: force le nombre de pages
+  
+  items:
+    # Bouton page précédente (visible si page > 1)
+    prev:
+      slot: 48
+      view_requirements:
+        - "expression: %page% > 1"
+      material: ARROW
+      name: "&e&l◀ Page précédente"
+      lore:
+        - ""
+        - "&7Page &f%page%&7/&f%max_page%"
+      click_actions:
+        - "[prev_page]"
+    
+    # Bouton page précédente désactivé (visible si page = 1)
+    prev_disabled:
+      slot: 48
+      view_requirements:
+        - "expression: %page% <= 1"
+      priority: -1              # Priorité inférieure
+      material: STAINED_GLASS_PANE
+      data: 15
+      name: "&7Pas de page précédente"
+    
+    # Bouton page suivante (visible si page < max)
+    next:
+      slot: 50
+      view_requirements:
+        - "expression: %page% < %max_page%"
+      material: ARROW
+      name: "&e&lPage suivante ▶"
+      click_actions:
+        - "[next_page]"
+    
+    # Bouton page suivante désactivé
+    next_disabled:
+      slot: 50
+      view_requirements:
+        - "expression: %page% >= %max_page%"
+      priority: -1
+      material: STAINED_GLASS_PANE
+      data: 15
+      name: "&7Pas de page suivante"
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# CONFIGURATION COMPLÈTE (SCROLL)
+# ─────────────────────────────────────────────────────────────────────────────────
+# Le scroll fonctionne avec les mêmes placeholders de page (%page%/%max_page%),
+# mais la navigation se fait via [scroll_up]/[scroll_down].
+exemple_scroll:
+  title: "&8Logs &7%page%/%max_page%"
+  size: 54
+  type: scroll
+  content_slots: "10-16,19-25,28-34,37-43"
+
+  # Menus statiques: fixer max_pages pour les conditions %page%.
+  # Menus provider: optionnel (calcul auto selon le contenu).
+  max_pages: 4
+
+  items:
+    scroll_up:
+      slot: 45
+      material: ARROW
+      name: "&e&l▲ Monter"
+      view_requirements:
+        - "expression: %page% > 1"
+      click_actions:
+        - "[scroll_up]"
+
+    scroll_up_disabled:
+      slot: 45
+      priority: -1
+      material: STAINED_GLASS_PANE
+      data: 15
+      name: "&7Début de liste"
+
+    scroll_info:
+      slot: 49
+      material: BOOK
+      name: "&eLigne %page%/%max_page%"
+      lore:
+        - "&7Offset: &f%scroll_offset%&7/&f%scroll_max%"
+
+    scroll_down:
+      slot: 53
+      material: ARROW
+      name: "&e&l▼ Descendre"
+      view_requirements:
+        - "expression: %page% < %max_page%"
+      click_actions:
+        - "[scroll_down]"
+
+    scroll_down_disabled:
+      slot: 53
+      priority: -1
+      material: STAINED_GLASS_PANE
+      data: 15
+      name: "&7Fin de liste"
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                                 11. SONS
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Format: "[sound] NOM_DU_SON volume pitch"
+# Volume: 0.0 à 2.0 (1.0 = normal)
+# Pitch: 0.5 à 2.0 (1.0 = normal, plus haut = plus aigu)
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# SONS POPULAIRES (Minecraft 1.8)
+# ─────────────────────────────────────────────────────────────────────────────────
+
+# Interface:
+# - CLICK                    -> Clic de bouton
+# - NOTE_PLING               -> Note de piano
+# - LEVEL_UP                 -> Niveau gagné
+# - ORB_PICKUP               -> Récupération d'XP
+
+# Coffres/Portes:
+# - CHEST_OPEN               -> Ouverture de coffre
+# - CHEST_CLOSE              -> Fermeture de coffre
+# - DOOR_OPEN                -> Ouverture de porte
+# - DOOR_CLOSE               -> Fermeture de porte
+
+# Villageois:
+# - VILLAGER_YES             -> Villageois content
+# - VILLAGER_NO              -> Villageois mécontent
+# - VILLAGER_HAGGLE          -> Marchandage
+
+# Combat:
+# - SUCCESSFUL_HIT           -> Coup réussi
+# - HURT_FLESH               -> Dégâts
+# - ITEM_BREAK               -> Item cassé
+
+# Téléportation:
+# - ENDERMAN_TELEPORT        -> Téléportation
+
+# Outils:
+# - ANVIL_USE                -> Enclume
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                        12. TEMPLATES ET HÉRITAGE
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Les templates permettent de réutiliser des configurations communes.
+# Placés dans: plugins/Kgui/templates/
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# EXEMPLE DE TEMPLATE: templates/default_border.yml
+# ─────────────────────────────────────────────────────────────────────────────────
+# size: 54
+# 
+# items:
+#   border_top:
+#     slots: '0-8'
+#     material: STAINED_GLASS_PANE
+#     data: 15
+#     display_name: " "
+#     
+#   border_bottom:
+#     slots: '45-53'
+#     material: STAINED_GLASS_PANE
+#     data: 15
+#     display_name: " "
+
+# ─────────────────────────────────────────────────────────────────────────────────
+# UTILISATION DANS UN MENU
+# ─────────────────────────────────────────────────────────────────────────────────
+mon_menu:
+  extends: 'default_border'     # Hérite des items du template
+  # OU
+  inherit_from: 'default_border'
+  
+  title: "&8Mon Menu"
+  # size: 54 (hérité du template si non défini)
+  
+  items:
+    # Les items du template sont automatiquement inclus!
+    mon_item:
+      slot: 22
+      material: DIAMOND
+      name: "&bMon item"
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                        ANNEXE: CODES COULEURS
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Couleurs:
+#   &0 = Noir          &8 = Gris foncé
+#   &1 = Bleu foncé    &9 = Bleu
+#   &2 = Vert foncé    &a = Vert
+#   &3 = Cyan foncé    &b = Cyan
+#   &4 = Rouge foncé   &c = Rouge
+#   &5 = Violet        &d = Rose
+#   &6 = Or            &e = Jaune
+#   &7 = Gris          &f = Blanc
+
+# Formatage:
+#   &l = Gras
+#   &n = Souligné
+#   &o = Italique
+#   &m = Barré
+#   &k = Obfusqué (texte aléatoire)
+#   &r = Reset
+
+
+# ███████████████████████████████████████████████████████████████████████████████
+#                        ANNEXE: MATÉRIAUX COURANTS
+# ███████████████████████████████████████████████████████████████████████████████
+
+# Interface:
+#   STAINED_GLASS_PANE  -> Vitre colorée (data 0-15)
+#   BARRIER             -> Barrière (croix rouge)
+#   PAPER               -> Papier
+#   CLAY_BALL           -> Balle d'argile (pour CIT custom)
+#   BOOK                -> Livre
+#   SKULL_ITEM          -> Tête (data 3 = joueur)
+#   ARROW               -> Flèche
+
+# Ressources:
+#   DIAMOND, EMERALD, GOLD_INGOT, IRON_INGOT, COAL
+#   DIAMOND_BLOCK, EMERALD_BLOCK, GOLD_BLOCK, IRON_BLOCK
+
+# Outils/Armes:
+#   DIAMOND_SWORD, DIAMOND_PICKAXE, DIAMOND_AXE
+#   IRON_SWORD, IRON_PICKAXE, IRON_AXE
+#   BOW, FISHING_ROD
+
+# Blocs:
+#   CHEST, ENDER_CHEST, CRAFTING_TABLE, FURNACE, ANVIL
+#   WOOL (data 0-15), GRASS
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# FIN DE LA DOCUMENTATION
+# ═══════════════════════════════════════════════════════════════════════════════
+# Pour toute question: contacte Krunsh sur Discord
+# ═══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,431 @@
+# ==============================================================================
+# KGUI - PERMISSIONS RELATIONS (faction_perms_relations.yml)
+# ==============================================================================
+# Menu de gestion des permissions pour les RELATIONS (Allié, Ennemi, Neutre, Trêve)
+# Permissions territoriales uniquement (ce que les autres peuvent faire chez vous)
+# ==============================================================================
+
+title: "&6【 &d&lRelations &6】 &8Permissions"
+size: 54
+type: normal
+
+block_in_combat: true
+cooldown: 1
+update_interval: 10
+
+# ==============================================================================
+# ITEMS
+# ==============================================================================
+items:
+
+  # ============================================================================
+  # BACKGROUNDS
+  # ============================================================================
+  background:
+    slots: "0,8,9,17,18,26,27,35,36,44,45,46,47,51,52,53"
+    material: CLAY_BALL
+    cit: background_2
+    glow: false
+    hide_attributes: true
+    kgui_protected: true
+    display_name: " "
+
+  # ============================================================================
+  # HEADER
+  # ============================================================================
+  header:
+    slot: 4
+    material: SKULL_ITEM
+    data: 3
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&d&lPermissions des Relations"
+    lore:
+      - ""
+      - "&7Définissez ce que les autres"
+      - "&7factions peuvent faire sur"
+      - "&7votre territoire."
+
+  # ============================================================================
+  # COLONNES: ALLY (gauche), NEUTRAL (centre), TRUCE (centre-droit), ENEMY (droite)
+  # ============================================================================
+
+  # === HEADERS DE COLONNES ===
+  header_ally:
+    slot: 1
+    material: EMERALD
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&a&lALLIÉS"
+    lore:
+      - ""
+      - "&7Permissions pour les factions"
+      - "&7alliées sur votre territoire."
+
+  header_neutral:
+    slot: 3
+    material: IRON_INGOT
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&7&lNEUTRES"
+    lore:
+      - ""
+      - "&7Permissions pour les factions"
+      - "&7neutres sur votre territoire."
+
+  header_truce:
+    slot: 5
+    material: GOLD_INGOT
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lTRÊVE"
+    lore:
+      - ""
+      - "&7Permissions pour les factions"
+      - "&7en trêve sur votre territoire."
+
+  header_enemy:
+    slot: 7
+    material: REDSTONE
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&c&lENNEMIS"
+    lore:
+      - ""
+      - "&7Permissions pour les factions"
+      - "&7ennemies sur votre territoire."
+
+  # ============================================================================
+  # PERMISSIONS ALLY (Colonne gauche: slots 10, 19, 28, 37)
+  # ============================================================================
+  ally_build:
+    slot: 10
+    material: COBBLESTONE
+    hide_attributes: true
+    display_name: "&aConstruire"
+    lore:
+      - ""
+      - "&7Les alliés peuvent placer des blocs"
+      - ""
+      - "%kfaction_perm_ally_build%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ALLY build"
+      - "[refresh]"
+
+  ally_destroy:
+    slot: 19
+    material: IRON_PICKAXE
+    hide_attributes: true
+    display_name: "&aDétruire"
+    lore:
+      - ""
+      - "&7Les alliés peuvent casser des blocs"
+      - ""
+      - "%kfaction_perm_ally_destroy%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ALLY destroy"
+      - "[refresh]"
+
+  ally_switch:
+    slot: 28
+    material: LEVER
+    hide_attributes: true
+    display_name: "&aPortes/Leviers"
+    lore:
+      - ""
+      - "&7Les alliés peuvent utiliser portes, leviers"
+      - ""
+      - "%kfaction_perm_ally_switch%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ALLY switch"
+      - "[refresh]"
+
+  ally_container:
+    slot: 37
+    material: CHEST
+    hide_attributes: true
+    display_name: "&aCoffres"
+    lore:
+      - ""
+      - "&7Les alliés peuvent ouvrir les coffres"
+      - ""
+      - "%kfaction_perm_ally_container%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ALLY container"
+      - "[refresh]"
+
+  ally_home:
+    slot: 2
+    material: BED
+    hide_attributes: true
+    display_name: "&aTéléport Home"
+    lore:
+      - ""
+      - "&7Les alliés peuvent utiliser votre home"
+      - ""
+      - "%kfaction_perm_ally_home%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ALLY home"
+      - "[refresh]"
+
+  # ============================================================================
+  # PERMISSIONS NEUTRAL (Colonne centre: slots 12, 21, 30, 39)
+  # ============================================================================
+  neutral_build:
+    slot: 12
+    material: COBBLESTONE
+    hide_attributes: true
+    display_name: "&7Construire"
+    lore:
+      - ""
+      - "&7Les neutres peuvent placer des blocs"
+      - ""
+      - "%kfaction_perm_neutral_build%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle NEUTRAL build"
+      - "[refresh]"
+
+  neutral_destroy:
+    slot: 21
+    material: IRON_PICKAXE
+    hide_attributes: true
+    display_name: "&7Détruire"
+    lore:
+      - ""
+      - "&7Les neutres peuvent casser des blocs"
+      - ""
+      - "%kfaction_perm_neutral_destroy%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle NEUTRAL destroy"
+      - "[refresh]"
+
+  neutral_switch:
+    slot: 30
+    material: LEVER
+    hide_attributes: true
+    display_name: "&7Portes/Leviers"
+    lore:
+      - ""
+      - "&7Les neutres peuvent utiliser portes, leviers"
+      - ""
+      - "%kfaction_perm_neutral_switch%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle NEUTRAL switch"
+      - "[refresh]"
+
+  neutral_container:
+    slot: 39
+    material: CHEST
+    hide_attributes: true
+    display_name: "&7Coffres"
+    lore:
+      - ""
+      - "&7Les neutres peuvent ouvrir les coffres"
+      - ""
+      - "%kfaction_perm_neutral_container%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle NEUTRAL container"
+      - "[refresh]"
+
+  # ============================================================================
+  # PERMISSIONS TRUCE (Colonne centre-droit: slots 14, 23, 32, 41)
+  # ============================================================================
+  truce_build:
+    slot: 14
+    material: COBBLESTONE
+    hide_attributes: true
+    display_name: "&eConstruire"
+    lore:
+      - ""
+      - "&7Les factions en trêve peuvent placer des blocs"
+      - ""
+      - "%kfaction_perm_truce_build%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle TRUCE build"
+      - "[refresh]"
+
+  truce_destroy:
+    slot: 23
+    material: IRON_PICKAXE
+    hide_attributes: true
+    display_name: "&eDétruire"
+    lore:
+      - ""
+      - "&7Les factions en trêve peuvent casser des blocs"
+      - ""
+      - "%kfaction_perm_truce_destroy%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle TRUCE destroy"
+      - "[refresh]"
+
+  truce_switch:
+    slot: 32
+    material: LEVER
+    hide_attributes: true
+    display_name: "&ePortes/Leviers"
+    lore:
+      - ""
+      - "&7Les factions en trêve peuvent utiliser portes, leviers"
+      - ""
+      - "%kfaction_perm_truce_switch%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle TRUCE switch"
+      - "[refresh]"
+
+  truce_container:
+    slot: 41
+    material: CHEST
+    hide_attributes: true
+    display_name: "&eCoffres"
+    lore:
+      - ""
+      - "&7Les factions en trêve peuvent ouvrir les coffres"
+      - ""
+      - "%kfaction_perm_truce_container%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle TRUCE container"
+      - "[refresh]"
+
+  # ============================================================================
+  # PERMISSIONS ENEMY (Colonne droite: slots 16, 25, 34, 43)
+  # ============================================================================
+  enemy_build:
+    slot: 16
+    material: COBBLESTONE
+    hide_attributes: true
+    display_name: "&cConstruire"
+    lore:
+      - ""
+      - "&7Les ennemis peuvent placer des blocs"
+      - ""
+      - "%kfaction_perm_enemy_build%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ENEMY build"
+      - "[refresh]"
+
+  enemy_destroy:
+    slot: 25
+    material: IRON_PICKAXE
+    hide_attributes: true
+    display_name: "&cDétruire"
+    lore:
+      - ""
+      - "&7Les ennemis peuvent casser des blocs"
+      - ""
+      - "%kfaction_perm_enemy_destroy%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ENEMY destroy"
+      - "[refresh]"
+
+  enemy_switch:
+    slot: 34
+    material: LEVER
+    hide_attributes: true
+    display_name: "&cPortes/Leviers"
+    lore:
+      - ""
+      - "&7Les ennemis peuvent utiliser portes, leviers"
+      - ""
+      - "%kfaction_perm_enemy_switch%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ENEMY switch"
+      - "[refresh]"
+
+  enemy_container:
+    slot: 43
+    material: CHEST
+    hide_attributes: true
+    display_name: "&cCoffres"
+    lore:
+      - ""
+      - "&7Les ennemis peuvent ouvrir les coffres"
+      - ""
+      - "%kfaction_perm_enemy_container%"
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[player] f perm toggle ENEMY container"
+      - "[refresh]"
+
+  # ============================================================================
+  # INFO CENTRALE
+  # ============================================================================
+  info:
+    slot: 22
+    material: BOOK
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&e&lInformations"
+    lore:
+      - ""
+      - "&7Ces permissions définissent ce que"
+      - "&7les autres factions peuvent faire"
+      - "&7sur &fvotre&7 territoire."
+      - ""
+      - "&a✔ Activé &8= &7Permission accordée"
+      - "&c✖ Désactivé &8= &7Permission refusée"
+      - ""
+      - "&8• Alliés: Factions alliées"
+      - "&8• Neutres: Aucune relation"
+      - "&8• Trêve: Cessez-le-feu"
+      - "&8• Ennemis: Factions hostiles"
+
+  # ============================================================================
+  # NAVIGATION
+  # ============================================================================
+  back_button:
+    slot: 49
+    material: ARROW
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&c&l◄ Retour"
+    lore:
+      - ""
+      - "&7Retour aux permissions"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 0.8"
+      - "[open] faction_permissions"
+
+  nav_recruit:
+    slot: 48
+    material: LEATHER_CHESTPLATE
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&7&l► Recrue"
+    lore:
+      - ""
+      - "&7Gérer les permissions Recrue"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_perms_recruit"
+
+  nav_coleader:
+    slot: 50
+    material: GOLD_CHESTPLATE
+    hide_attributes: true
+    kgui_protected: true
+    display_name: "&6&l► Co-Leader"
+    lore:
+      - ""
+      - "&7Gérer les permissions Co-Leader"
+    
+    click_actions:
+      - "[sound] CLICK 1.0 1.0"
+      - "[open] faction_perms_coleader"
