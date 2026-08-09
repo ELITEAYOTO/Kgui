@@ -1,6 +1,6 @@
 schema_version: 2
-id: faction_claims
-title: "&2Territoires &8• &7%page%/%max_page%"
+id: faction_relations
+title: "&dRelations &8• &7%page%/%max_page%"
 size: 54
 type: pagination
 refresh: {policy: EVENT}
@@ -13,23 +13,9 @@ pagination:
   content_slots: "10-16,19-25,28-34"
   prev_button_slot: 48
   next_button_slot: 50
-  provider: "kfaction:claims"
-  empty_message: "&7Ta faction ne possède aucun territoire."
+  provider: "kfaction:relations"
+  empty_message: "&7Aucune relation ni demande en attente."
 items:
-  claim:
-    slot: 4
-    material: GOLD_HOE
-    display_name: "&aClaim le chunk courant"
-    click_requirements:
-      permission: {type: "kfaction:capability", permission: claim, deny_message: "&cTon rôle ne peut pas claim."}
-    click_actions: ["[kfaction:claim]"]
-  unclaim:
-    slot: 8
-    material: WOOD_HOE
-    display_name: "&cUnclaim le chunk courant"
-    click_requirements:
-      permission: {type: "kfaction:capability", permission: unclaim, deny_message: "&cTon rôle ne peut pas unclaim."}
-    click_actions: ["[kfaction:unclaim]"]
   back: {slot: 45, material: ARROW, display_name: "&cRetour", click_actions: ["[open] faction_menu"]}
   previous: {slot: 48, material: ARROW, display_name: "&ePage précédente", click_actions: ["[previous_page]"]}
   page: {slot: 49, material: PAPER, display_name: "&ePage %page%/%max_page%"}

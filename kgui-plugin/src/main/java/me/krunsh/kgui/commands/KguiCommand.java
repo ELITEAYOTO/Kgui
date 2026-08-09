@@ -261,6 +261,8 @@ public class KguiCommand implements CommandExecutor {
         sender.sendMessage("§7- CombatTag: " + (plugin.getHookManager().isCombatTagEnabled() ? "§a✓" : "§c✗"));
         sender.sendMessage("§7- ProtocolLib: " + (plugin.getHookManager().isProtocolLibEnabled() ? "§a✓" : "§c✗"));
         sender.sendMessage("§7- HeadDatabase: " + (plugin.getHookManager().isHeadDatabaseEnabled() ? "§a✓" : "§c✗"));
+        sender.sendMessage("§7- Kfaction API: " + (plugin.getKfactionIntegrationManager().isReady()
+            ? "§aREADY_2_3" : "§c" + plugin.getKfactionIntegrationManager().getState()));
 
         GuiMetrics.Snapshot metrics = plugin.getGuiMetrics().snapshot();
         sender.sendMessage("");

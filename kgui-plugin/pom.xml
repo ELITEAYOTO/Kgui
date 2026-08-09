@@ -89,6 +89,13 @@
             <artifactId>kgui-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Contrat public uniquement. L'implémentation reste fournie par le softdepend Kfaction. -->
+        <dependency>
+            <groupId>com.github.ELITEAYOTO.Kfaction</groupId>
+            <artifactId>kfaction-api</artifactId>
+            <version>659a90e</version>
+            <scope>provided</scope>
+        </dependency>
         <!-- Spigot API 1.8.8 -->
         <dependency>
             <groupId>org.spigotmc</groupId>

@@ -17,6 +17,7 @@ import me.krunsh.kgui.gui.GuiManager;
 import me.krunsh.kgui.hooks.HookManager;
 import me.krunsh.kgui.input.ChatInputListener;
 import me.krunsh.kgui.input.InputManager;
+import me.krunsh.kgui.integration.KfactionIntegrationManager;
 import me.krunsh.kgui.item.ItemRegistry;
 import me.krunsh.kgui.listeners.GuiListener;
 import me.krunsh.kgui.listeners.SecurityListener;
@@ -66,6 +67,7 @@ public class Kgui extends JavaPlugin {
     private ProviderEngine providerEngine;
     private RefreshScheduler refreshScheduler;
     private GuiInvalidationBus guiInvalidationBus;
+    private KfactionIntegrationManager kfactionIntegrationManager;
 
     @Override
     public void onEnable() {
@@ -81,6 +83,11 @@ public class Kgui extends JavaPlugin {
 
         // Publier l'API seulement quand tous ses services sont disponibles
         registerApi();
+
+        // Adaptateur optionnel chargé sans résoudre les classes Kfaction si le
+        // softdepend est absent.
+        this.kfactionIntegrationManager = new KfactionIntegrationManager(this);
+        this.kfactionIntegrationManager.start();
         
         // Enregistrer les listeners
         registerListeners();
@@ -100,6 +107,7 @@ public class Kgui extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (kfactionIntegrationManager != null) kfactionIntegrationManager.close();
         shutdownApi();
 
         if (refreshScheduler != null) refreshScheduler.close();
@@ -337,4 +345,5 @@ public class Kgui extends JavaPlugin {
     public ProviderEngine getProviderEngine() { return providerEngine; }
     public RefreshScheduler getRefreshScheduler() { return refreshScheduler; }
     public GuiInvalidationBus getGuiInvalidationBus() { return guiInvalidationBus; }
+    public KfactionIntegrationManager getKfactionIntegrationManager() { return kfactionIntegrationManager; }
 }

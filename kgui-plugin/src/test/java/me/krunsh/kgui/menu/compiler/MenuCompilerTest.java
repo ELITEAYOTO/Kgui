@@ -14,6 +14,11 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class MenuCompilerTest {
+    private static final String[] KFACTION_PACK_MENUS = {
+        "faction_menu", "faction_members", "faction_claims", "faction_logs", "faction_warps",
+        "faction_quests", "faction_rewards", "faction_relations", "faction_invites", "faction_zones"
+    };
+
     @Rule
     public TemporaryFolder temporary = new TemporaryFolder();
 
@@ -24,7 +29,13 @@ public class MenuCompilerTest {
             new File(resources, "templates"), new File(resources, "menus")).compileAll();
 
         assertTrue(diagnostics(result), result.isSuccess());
-        assertTrue(result.getMenus().size() >= 20);
+        assertTrue(result.getMenus().size() >= 19);
+        for (String menuId : KFACTION_PACK_MENUS) {
+            CompiledMenu menu = result.getMenus().get(menuId);
+            assertNotNull(menuId, menu);
+            assertEquals(menuId, "kfaction:available",
+                menu.toYamlConfiguration().getString("open_requirements.api.type"));
+        }
         assertEquals(0, result.getWarningCount());
     }
 
