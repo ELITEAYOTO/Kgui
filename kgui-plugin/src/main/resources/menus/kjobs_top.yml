@@ -1,0 +1,43 @@
+schema_version: 2
+id: kjobs_top
+title: "&8Classements des métiers"
+size: 54
+type: pagination
+refresh: {policy: HYBRID, interval: 200}
+open_requirements:
+  api: {type: "kjobsultimate:available", deny_message: "&cKjobsUltimate est absent ou incompatible."}
+  data: {type: "kjobsultimate:data_loaded", deny_message: "&eTes données de métiers sont encore en chargement."}
+pagination:
+  enabled: true
+  navigation: PAGE
+  content_slots: "10-16,19-25,28-34"
+  prev_button_slot: 45
+  next_button_slot: 53
+  max_pages: 0
+  provider: "kjobsultimate:ranking"
+  empty_message: "&7Classement vide."
+  empty_item: {material: PAPER, display_name: "&7Aucun résultat"}
+items:
+  global: {slot: 1, material: NETHER_STAR, display_name: "&fGlobal", click_actions: ["[kjobsultimate:open_top]"]}
+  mineur: {slot: 2, material: IRON_PICKAXE, display_name: "&bMineur", click_actions: ["[kjobsultimate:open_top] job_id=mineur"]}
+  farmer: {slot: 3, material: WHEAT, display_name: "&aFarmeur", click_actions: ["[kjobsultimate:open_top] job_id=farmer"]}
+  hunter: {slot: 4, material: BOW, display_name: "&cChasseur", click_actions: ["[kjobsultimate:open_top] job_id=hunter"]}
+  pretorien: {slot: 5, material: IRON_SWORD, display_name: "&6Prétorien", click_actions: ["[kjobsultimate:open_top] job_id=pretorien"]}
+  artisan: {slot: 6, material: ANVIL, display_name: "&dArtisan", click_actions: ["[kjobsultimate:open_top] job_id=artisan"]}
+  pilleur: {slot: 7, material: TNT, display_name: "&5Pilleur", click_actions: ["[kjobsultimate:open_top] job_id=pilleur"]}
+  previous:
+    slot: 45
+    material: ARROW
+    display_name: "&ePage précédente"
+    click_actions: ["[kgui:navigate] direction=previous"]
+  back:
+    slot: 49
+    material: BOOK
+    display_name: "&eRetour aux métiers"
+    click_actions: ["[kjobsultimate:open_main]"]
+  next:
+    slot: 53
+    material: ARROW
+    display_name: "&ePage suivante"
+    click_actions: ["[kgui:navigate] direction=next"]
+

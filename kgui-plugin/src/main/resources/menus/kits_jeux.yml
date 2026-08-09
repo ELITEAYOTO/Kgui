@@ -1,0 +1,68 @@
+schema_version: 2
+id: kits_jeux
+title: "&8☰ &5&lKits de jeu &8☰"
+size: 54
+open_commands: [kitjeux, kitsjeux, guikitjeux]
+allowed_worlds: [world]
+block_in_combat: true
+cooldown: 1
+refresh: {policy: EVENT}
+items:
+  food:
+    slot: 20
+    material: COOKED_BEEF
+    display_name: "&5&lKit Bouffe"
+    click_actions: ["[player] playerkits2:kit claim Bouffe"]
+  alchemist:
+    slot: 21
+    material: CLAY_BALL
+    cit: alchimiste
+    display_name: "&5&lKit Alchimiste"
+    click_actions: ["[player] playerkits2:kit claim Alchimiste"]
+  explorer:
+    slot: 22
+    material: CLAY_BALL
+    cit: explorateur
+    display_name: "&5&lKit Explorateur"
+    click_actions: ["[player] playerkits2:kit claim Explorateur"]
+  potion:
+    slot: 23
+    material: CLAY_BALL
+    cit: potion5
+    display_name: "&5&lKit Potion"
+    click_actions: ["[player] playerkits2:kit claim Potion"]
+  enchanter:
+    slot: 24
+    material: CLAY_BALL
+    cit: enchantement
+    display_name: "&5&lKit Enchanteur"
+    click_actions: ["[player] playerkits2:kit claim Enchanteur"]
+  farmer:
+    slot: 29
+    material: CLAY_BALL
+    cit: farmer
+    display_name: "&5&lKit Farmeur"
+    click_actions: ["[player] playerkits2:kit claim Farmer"]
+  miner:
+    slot: 30
+    material: CLAY_BALL
+    cit: minerai
+    display_name: "&5&lKit Mineur"
+    click_actions: ["[player] playerkits2:kit claim Mineur"]
+  raider:
+    slot: 31
+    material: CLAY_BALL
+    cit: pillage
+    display_name: "&5&lKit Pilleur"
+    click_actions: ["[player] playerkits2:kit claim Pillage"]
+  armor:
+    slot: 32
+    material: CLAY_BALL
+    cit: blindage
+    display_name: "&5&lKit Blindage"
+    click_actions: ["[player] playerkits2:kit claim Blindage"]
+  back:
+    slot: 49
+    material: ARROW
+    display_name: "&eRetour aux kits"
+    click_actions: ["[open] kits"]

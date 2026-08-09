@@ -21,7 +21,7 @@ allowed_worlds:
   - 'world'
 block_in_combat: true
 cooldown: 2
-update_interval: 20
+refresh: {policy: EVENT}
 
 items:
   
@@ -197,4 +197,3 @@ items:
     hide_attributes: true
     kgui_protected: true
     priority: 1
-    

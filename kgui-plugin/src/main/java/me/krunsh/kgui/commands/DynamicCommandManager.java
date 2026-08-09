@@ -1,8 +1,8 @@
 package me.krunsh.kgui.commands;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +23,7 @@ public class DynamicCommandManager {
 
     private final Kgui plugin;
     private final Map<String, String> commandToMenu = new HashMap<>();
-    private final List<String> registeredCommands = new ArrayList<>();
+    private final Map<String, DynamicMenuCommand> registeredCommands = new LinkedHashMap<>();
     private CommandMap commandMap;
 
     public DynamicCommandManager(Kgui plugin) {
@@ -103,26 +103,13 @@ public class DynamicCommandManager {
             return false;
         }
 
-        // Vérifier si commande existante — forcer la priorité Kgui via reflection
+        // Ne jamais voler une commande ou un alias appartenant déjà à un autre plugin.
         Command existing = commandMap.getCommand(commandName);
         if (existing != null) {
-            try {
-                java.lang.reflect.Field knownCommandsField = commandMap.getClass().getDeclaredField("knownCommands");
-                knownCommandsField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                java.util.Map<String, Command> knownCommands = (java.util.Map<String, Command>) knownCommandsField.get(commandMap);
-                knownCommands.remove(commandName);
-                // Only remove the label if it matches the command being overridden.
-                // Removing a different label would destroy the original plugin's main command
-                // (e.g. overriding alias "kits" of PlayerKits2 would otherwise remove "kit").
-                if (existing.getLabel() != null && existing.getLabel().equalsIgnoreCase(commandName)) {
-                    knownCommands.remove(existing.getLabel().toLowerCase());
-                }
-                plugin.getLogger().info("Command /" + commandName + " overridden from " + existing.getClass().getSimpleName());
-            } catch (Exception e) {
-                plugin.getLogger().warning("Command /" + commandName + " already exists, could not override: " + e.getMessage());
-                return false;
-            }
+            plugin.getLogger().warning("Command /" + commandName
+                    + " already belongs to another plugin; menu " + menuId
+                    + " must use a unique open command");
+            return false;
         }
 
         try {
@@ -134,7 +121,7 @@ public class DynamicCommandManager {
             
             // Tracker
             commandToMenu.put(commandName, menuId);
-            registeredCommands.add(commandName);
+            registeredCommands.put(commandName, dynamicCommand);
             
             plugin.getLogger().info("Registered command /" + commandName + " -> menu " + menuId);
             return true;
@@ -159,9 +146,11 @@ public class DynamicCommandManager {
             Map<String, Command> knownCommands = (Map<String, Command>) knownCommandsField.get(commandMap);
 
             // Supprimer nos commandes
-            for (String cmd : registeredCommands) {
-                knownCommands.remove(cmd);
-                knownCommands.remove("kgui:" + cmd);
+            for (Map.Entry<String, DynamicMenuCommand> registration : registeredCommands.entrySet()) {
+                String cmd = registration.getKey();
+                DynamicMenuCommand owned = registration.getValue();
+                if (knownCommands.get(cmd) == owned) knownCommands.remove(cmd);
+                if (knownCommands.get("kgui:" + cmd) == owned) knownCommands.remove("kgui:" + cmd);
             }
         } catch (Exception e) {
             plugin.getLogger().warning("Could not unregister commands: " + e.getMessage());

@@ -33,6 +33,7 @@ import me.krunsh.kgui.menu.MenuType;
  */
 public final class MenuCompiler {
     private static final Pattern ACTION_SYNTAX = Pattern.compile("^\\[([a-zA-Z0-9_.:/-]+)](?:\\s+.*)?$");
+    private static final Pattern OPEN_COMMAND_NAME = Pattern.compile("^[a-z0-9_-]{1,32}$");
     public static final int SCHEMA_VERSION = 2;
     private static final long MAX_SOURCE_BYTES = 4L * 1024L * 1024L;
 
@@ -117,7 +118,44 @@ public final class MenuCompiler {
             compiledMenus.put(entry.getKey(), compile(document, resolved, diagnostics));
         }
 
+        validateOpenCommands(compiledMenus, menus, diagnostics);
+
         return new MenuCompilationResult(compiledMenus, compiledTemplates, diagnostics);
+    }
+
+    private void validateOpenCommands(Map<String, CompiledMenu> compiledMenus,
+                                      Map<String, SourceDocument> sources,
+                                      List<MenuDiagnostic> diagnostics) {
+        Map<String, String> owners = new LinkedHashMap<>();
+        for (Map.Entry<String, CompiledMenu> entry : compiledMenus.entrySet()) {
+            String menuId = entry.getKey();
+            SourceDocument source = sources.get(menuId);
+            Map<String, Object> config = entry.getValue().getConfig();
+            List<String> commands = new ArrayList<>();
+            Object single = config.get("open_command");
+            if (single instanceof String) commands.add((String) single);
+            Object multiple = config.get("open_commands");
+            if (multiple instanceof Iterable<?>) {
+                for (Object value : (Iterable<?>) multiple) {
+                    if (value instanceof String) commands.add((String) value);
+                }
+            }
+
+            for (String raw : commands) {
+                String command = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
+                while (command.startsWith("/")) command = command.substring(1);
+                if (!OPEN_COMMAND_NAME.matcher(command).matches()) {
+                    error(diagnostics, source, "INVALID_OPEN_COMMAND", "open_commands",
+                        "Commande d'ouverture invalide: '" + raw + "'.");
+                    continue;
+                }
+                String previous = owners.putIfAbsent(command, menuId);
+                if (previous != null) {
+                    error(diagnostics, source, "DUPLICATE_OPEN_COMMAND", "open_commands",
+                        "La commande /" + command + " appartient déjà au menu '" + previous + "'.");
+                }
+            }
+        }
     }
 
     private Map<String, SourceDocument> loadFolder(File folder, boolean template,
