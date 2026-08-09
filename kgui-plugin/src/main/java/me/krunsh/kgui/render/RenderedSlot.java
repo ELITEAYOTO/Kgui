@@ -36,6 +36,11 @@ public final class RenderedSlot {
         return candidate != null && candidate.getAmount() == item.getAmount() && item.isSimilar(candidate);
     }
 
+    /** Compare uniquement ce que le client voit, sans l'autorité de clic serveur. */
+    public boolean visuallyEquals(RenderedSlot other) {
+        return other != null && slot == other.slot && Objects.equals(item, other.item);
+    }
+
     @Override
     public boolean equals(Object other) {
         if (this == other) return true;

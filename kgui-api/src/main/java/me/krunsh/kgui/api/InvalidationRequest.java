@@ -7,6 +7,7 @@ import java.util.UUID;
 
 /** Invalidation ciblee; les champs non pertinents pour le scope restent nuls. */
 public final class InvalidationRequest {
+    private static final int MAX_ITEM_IDS = 256;
     public enum Scope { PLAYER_MENU, PLAYER, MENU, PROVIDER, ALL }
 
     private final Scope scope;
@@ -22,8 +23,7 @@ public final class InvalidationRequest {
         this.playerId = playerId;
         this.menuId = menuId;
         this.providerId = providerId;
-        this.itemIds = Collections.unmodifiableSet(itemIds == null
-                ? Collections.<String>emptySet() : new LinkedHashSet<>(itemIds));
+        this.itemIds = boundedItemIds(itemIds);
         this.reason = reason;
     }
 
@@ -57,4 +57,16 @@ public final class InvalidationRequest {
     public String getProviderId() { return providerId; }
     public Set<String> getItemIds() { return itemIds; }
     public String getReason() { return reason; }
+
+    private static Set<String> boundedItemIds(Set<String> values) {
+        if (values == null || values.isEmpty()) return Collections.emptySet();
+        Set<String> result = new LinkedHashSet<>();
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty() && value.trim().length() <= 128) {
+                result.add(value.trim());
+            }
+            if (result.size() == MAX_ITEM_IDS) break;
+        }
+        return Collections.unmodifiableSet(result);
+    }
 }

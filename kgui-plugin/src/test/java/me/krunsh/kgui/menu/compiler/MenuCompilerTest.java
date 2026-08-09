@@ -206,6 +206,48 @@ public class MenuCompilerTest {
         assertNotNull(find(result, "FORBIDDEN_OP_ACTION"));
     }
 
+    @Test
+    public void rowScrollAndHybridRefreshAreValidated() throws Exception {
+        Layout layout = layout();
+        write(layout.menus, "scroll.yml",
+            "schema_version: 2\nsize: 27\ntype: pagination\n" +
+            "refresh: {policy: HYBRID, interval: 100}\n" +
+            "pagination:\n  navigation: ROW_SCROLL\n  content_slots: '10-12,19-20'\n" +
+            "  provider: test:items\nitems: {}\n");
+
+        MenuCompilationResult result = new MenuCompiler(layout.templates, layout.menus).compileAll();
+
+        assertTrue(diagnostics(result), result.isSuccess());
+        assertEquals("ROW_SCROLL", result.getMenus().get("scroll").toYamlConfiguration()
+            .getString("pagination.navigation"));
+    }
+
+    @Test
+    public void duplicateContentSlotIsRejectedAtCompileTime() throws Exception {
+        Layout layout = layout();
+        write(layout.menus, "duplicates.yml",
+            "schema_version: 2\nsize: 27\ntype: pagination\n" +
+            "pagination:\n  content_slots: '10-12,12'\nitems: {}\n");
+
+        MenuCompilationResult result = new MenuCompiler(layout.templates, layout.menus).compileAll();
+
+        assertFalse(result.isSuccess());
+        assertNotNull(find(result, "DUPLICATE_CONTENT_SLOT"));
+    }
+
+    @Test
+    public void invalidRefreshPolicyIsRejected() throws Exception {
+        Layout layout = layout();
+        write(layout.menus, "refresh.yml",
+            "schema_version: 2\nsize: 9\nrefresh: {policy: ALWAYS, interval: -1}\nitems: {}\n");
+
+        MenuCompilationResult result = new MenuCompiler(layout.templates, layout.menus).compileAll();
+
+        assertFalse(result.isSuccess());
+        assertNotNull(find(result, "INVALID_REFRESH_POLICY"));
+        assertNotNull(find(result, "NEGATIVE_VALUE"));
+    }
+
     private Layout layout() throws Exception {
         File root = temporary.newFolder();
         File templates = new File(root, "templates");

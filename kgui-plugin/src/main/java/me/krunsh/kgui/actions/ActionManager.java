@@ -17,10 +17,6 @@ import me.krunsh.kgui.api.ActionHandler;
 import me.krunsh.kgui.api.ActionResult;
 import me.krunsh.kgui.api.MenuArguments;
 import me.krunsh.kgui.extension.NamespacedRegistry;
-import me.krunsh.kgui.menu.MenuData;
-import me.krunsh.kgui.menu.MenuType;
-import me.krunsh.kgui.pagination.PaginationManager;
-import me.krunsh.kgui.pagination.ScrollManager;
 import me.krunsh.kgui.service.KguiApiProvider;
 import me.krunsh.kgui.session.SessionToken;
 import me.krunsh.kgui.utils.ColorUtils;
@@ -153,18 +149,16 @@ public class ActionManager {
         // [prev_page] - Page précédente (pagination)
         executors.put("prev_page", (player, args) -> {
             String currentMenu = plugin.getGuiManager().getPlayerCurrentMenu(player);
-            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)
-                    && plugin.getPaginationManager().previousPage(player, currentMenu)) {
-                plugin.getGuiManager().refreshMenu(player);
+            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)) {
+                plugin.getGuiManager().navigatePrevious(player);
             }
         });
         
         // [next_page] - Page suivante (pagination)
         executors.put("next_page", (player, args) -> {
             String currentMenu = plugin.getGuiManager().getPlayerCurrentMenu(player);
-            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)
-                    && plugin.getPaginationManager().nextPage(player, currentMenu)) {
-                plugin.getGuiManager().refreshMenu(player);
+            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)) {
+                plugin.getGuiManager().navigateNext(player);
             }
         });
         
@@ -174,15 +168,7 @@ public class ActionManager {
             if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)) {
                 try {
                     int page = Integer.parseInt(args.trim());
-                    MenuData menuData = plugin.getMenuManager().getMenu(currentMenu);
-                    if (menuData != null && menuData.getMenuType() == MenuType.SCROLL) {
-                        if (plugin.getScrollManager().setScrollOffset(player, currentMenu, Math.max(0, page - 1))) {
-                            syncPaginationWithScroll(player, currentMenu);
-                            plugin.getGuiManager().refreshMenu(player);
-                        }
-                    } else if (plugin.getPaginationManager().setPage(player, currentMenu, page)) {
-                        plugin.getGuiManager().refreshMenu(player);
-                    }
+                    plugin.getGuiManager().navigateTo(player, page);
                 } catch (NumberFormatException ignored) {}
             }
         });
@@ -190,20 +176,29 @@ public class ActionManager {
         // [scroll_up] - Scroll vers le haut
         executors.put("scroll_up", (player, args) -> {
             String currentMenu = plugin.getGuiManager().getPlayerCurrentMenu(player);
-            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)
-                    && plugin.getScrollManager().scrollUp(player, currentMenu)) {
-                syncPaginationWithScroll(player, currentMenu);
-                plugin.getGuiManager().refreshMenu(player);
+            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)) {
+                plugin.getGuiManager().navigatePrevious(player);
             }
         });
         
         // [scroll_down] - Scroll vers le bas
         executors.put("scroll_down", (player, args) -> {
             String currentMenu = plugin.getGuiManager().getPlayerCurrentMenu(player);
-            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)
-                    && plugin.getScrollManager().scrollDown(player, currentMenu)) {
-                syncPaginationWithScroll(player, currentMenu);
-                plugin.getGuiManager().refreshMenu(player);
+            if (currentMenu != null && plugin.getGuiManager().tryLockNavigation(player)) {
+                plugin.getGuiManager().navigateNext(player);
+            }
+        });
+
+        // [kgui:navigate] direction=next|previous|up|down [step=N] OU page=N
+        executors.put("navigate", (player, args) -> {
+            NavigationAction navigation = NavigationAction.parse(args);
+            if (navigation == null
+                    || plugin.getGuiManager().getPlayerCurrentMenu(player) == null
+                    || !plugin.getGuiManager().tryLockNavigation(player)) return;
+            if (navigation.getKind() == NavigationAction.Kind.SET) {
+                plugin.getGuiManager().navigateTo(player, navigation.getValue());
+            } else {
+                plugin.getGuiManager().navigateBy(player, navigation.getValue());
             }
         });
         
@@ -519,29 +514,6 @@ public class ActionManager {
             return Integer.parseInt(s.trim());
         } catch (NumberFormatException e) {
             return defaultValue;
-        }
-    }
-
-    /**
-     * Aligne les placeholders de pagination (%page%/%max_page%) avec l'état du scroll.
-     */
-    private void syncPaginationWithScroll(Player player, String menuId) {
-        ScrollManager.ScrollData scrollData = plugin.getScrollManager().getScrollData(player, menuId);
-        if (scrollData == null) {
-            return;
-        }
-
-        PaginationManager.PageData pageData = plugin.getPaginationManager().getPageData(player, menuId);
-        if (pageData == null) {
-            plugin.getPaginationManager().initPlayer(player, menuId, 1, Math.max(1, scrollData.getMaxOffset() + 1));
-            pageData = plugin.getPaginationManager().getPageData(player, menuId);
-        }
-
-        if (pageData != null) {
-            int maxPage = Math.max(1, scrollData.getMaxOffset() + 1);
-            int currentPage = Math.min(maxPage, scrollData.getScrollOffset() + 1);
-            pageData.setMaxPage(maxPage);
-            pageData.setCurrentPage(currentPage);
         }
     }
 

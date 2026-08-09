@@ -12,7 +12,7 @@ import static org.junit.Assert.*;
 public class RenderedSlotTest {
     @Test
     public void dynamicActionsRemainInServerSideBinding() {
-        ClickBinding binding = ClickBinding.forDynamicItem("logs:42",
+        ClickBinding binding = ClickBinding.forProviderItem("test:logs", "42", 1L, 1L, 4,
             Arrays.asList("[message] general"), Arrays.asList("[message] left"),
             Arrays.asList("[message] right"), Arrays.asList("[message] shift"));
         RenderedSlot slot = new RenderedSlot(4, new ItemStack(Material.PAPER), binding);

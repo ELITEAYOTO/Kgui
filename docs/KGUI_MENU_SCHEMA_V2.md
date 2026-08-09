@@ -41,7 +41,8 @@ schema_version: 2
 | `allowed_worlds`, `blocked_worlds` | liste de chaînes | Filtres de mondes. |
 | `open_on_region_enter`, `allowed_regions`, `blocked_regions` | liste de chaînes | Intégration WorldGuard. |
 | `cooldown` | entier positif ou nul | Délai d'ouverture en secondes. |
-| `update_interval` | entier positif ou nul | Intervalle historique en ticks; le scheduler d'invalidation ciblée relève du Lot 5. |
+| `update_interval` | entier positif ou nul | Alias historique : `> 0` équivaut à `refresh.policy: INTERVAL`. |
+| `refresh` | section | Politique `MANUAL`, `EVENT`, `INTERVAL` ou `HYBRID`, et intervalle en ticks. |
 | `pagination` | section | Configuration paginée recommandée. |
 | `content_slots`, `prev_button_slot`, `next_button_slot`, `max_pages` | slots/entiers | Ancien format racine encore accepté. |
 | `provider`, `provider_args` | chaîne/section scalaire | Fournisseur dynamique et arguments libres. |
@@ -76,13 +77,17 @@ items:
 
 ```yaml
 type: pagination
+refresh:
+  policy: EVENT
+  interval: 0
 pagination:
   enabled: true
+  navigation: PAGE
   content_slots: '10-16,19-25,28-34'
   prev_button_slot: 45
   next_button_slot: 53
   max_pages: 0
-  provider: kfaction_members
+  provider: kfaction:members
   provider_args:
     role: all
   empty_message: '&7Aucun membre.'
@@ -93,7 +98,44 @@ pagination:
 
 `content_slots` accepte un entier, une liste d'entiers ou une chaîne de plages. Tous les slots doivent
 être compris entre `0` et `size - 1`. `-1` désactive un bouton précédent/suivant. `provider_args` accepte
-uniquement des valeurs scalaires afin que le contrat envoyé au provider reste déterministe.
+uniquement des valeurs scalaires afin que le contrat envoyé au provider reste déterministe. Les slots
+dupliqués sont refusés. Un provider doit utiliser son identifiant namespacé réel, par exemple
+`kfaction:members`.
+
+`navigation: PAGE` remplace toute la tranche visible à chaque déplacement. `navigation: ROW_SCROLL`
+décale la fenêtre d'une ligne logique à la fois, y compris lorsque les lignes configurées n'ont pas la
+même largeur. Les actions historiques `next_page`, `prev_page`, `scroll_up` et `scroll_down` ciblent le
+même viewport. L'action recommandée est explicite :
+
+```yaml
+click_actions:
+  - '[kgui:navigate] direction=down step=1'
+# ou
+  - '[kgui:navigate] page=3'
+```
+
+Les détails du contrat provider, des révisions, invalidations et limites sont dans
+`KGUI_PROVIDERS_VIEWPORT_INVALIDATION_V2.md`.
+
+## Politique de refresh
+
+```yaml
+refresh:
+  policy: HYBRID
+  interval: 100
+```
+
+| Politique | Invalidation API | Intervalle |
+|---|---:|---:|
+| `MANUAL` | non | non |
+| `EVENT` | oui | non |
+| `INTERVAL` | non | oui |
+| `HYBRID` | oui | oui |
+
+`HYBRID` ajoute un filet de sécurité périodique aux invalidations ciblées. L'intervalle est planifié par
+session, pas obtenu par un balayage global des GUI ouvertes. Avec `MANUAL`, seule une action
+`[kgui:refresh]` rafraîchit la vue. Sans section `refresh`, `update_interval > 0` produit `INTERVAL`
+pour préserver le polling historique; sinon la valeur par défaut est `EVENT`.
 
 ## Items
 
@@ -155,10 +197,11 @@ sont extensibles; ils sont transmis au moteur de requirements et aux hooks.
 - aucune fermeture ni modification du cache actif par `/kgui validate`;
 - conservation du snapshot précédent si une compilation ou une matérialisation échoue.
 
-Le modèle runtime `MenuData` reste temporairement généré depuis le modèle immuable pour l'adaptateur
-d'items et la pagination historiques. Depuis le Lot 3, le rendu actif est un `RenderedSlot[]` lié à une
-session/révision et un refresh à titre/taille stables ne crée plus de nouvel inventaire Bukkit.
-La suppression finale de l'adaptateur `MenuData` et l'unification du viewport relèvent du Lot 5.
+Le modèle runtime `MenuData` reste généré depuis le modèle immuable pour l'adaptateur d'items. Depuis
+le Lot 5, la navigation n'a plus de cache V1 parallèle : `ViewportState` est la source de vérité unique
+de la session pour `PAGE` et `ROW_SCROLL`. Le rendu actif est un `RenderedSlot[]` lié à la
+session/révision; un refresh à titre/taille stables calcule le diff sans créer de nouvel inventaire
+Bukkit.
 
 ## Sécurité runtime
 

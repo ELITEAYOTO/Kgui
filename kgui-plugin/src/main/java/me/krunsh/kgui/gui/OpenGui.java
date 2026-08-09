@@ -10,23 +10,17 @@ import me.krunsh.kgui.menu.MenuData;
 /**
  * Représente un menu ouvert pour un joueur
  */
-public class OpenGui {
+public abstract class OpenGui {
 
     private final UUID playerUuid;
     private final String menuId;
-    private int page;
-    private int totalPages = 1;
     private Inventory inventory;  // Non-final pour permettre refresh avec nouveau titre
     private final long openTime;
     private long lastRefreshTime;
     
-    // Pour la pagination/scroll
-    private int scrollOffset = 0;
-
     public OpenGui(UUID playerUuid, String menuId, int page, Inventory inventory) {
         this.playerUuid = playerUuid;
         this.menuId = menuId;
-        this.page = page;
         this.inventory = inventory;
         this.openTime = System.currentTimeMillis();
         this.lastRefreshTime = System.currentTimeMillis();
@@ -40,13 +34,9 @@ public class OpenGui {
         return menuId;
     }
 
-    public int getPage() {
-        return page;
-    }
+    public abstract int getPage();
 
-    public void setPage(int page) {
-        this.page = page;
-    }
+    public abstract void setPage(int page);
 
     public Inventory getInventory() {
         return inventory;
@@ -60,28 +50,22 @@ public class OpenGui {
         return openTime;
     }
 
-    public int getScrollOffset() {
-        return scrollOffset;
-    }
+    public abstract int getScrollOffset();
 
-    public void setScrollOffset(int scrollOffset) {
-        this.scrollOffset = scrollOffset;
-    }
+    public abstract void setScrollOffset(int scrollOffset);
 
     /**
      * Incrémente le scroll offset
      */
     public void scrollRight() {
-        scrollOffset++;
+        setScrollOffset(getScrollOffset() + 1);
     }
 
     /**
      * Décrémente le scroll offset
      */
     public void scrollLeft() {
-        if (scrollOffset > 0) {
-            scrollOffset--;
-        }
+        if (getScrollOffset() > 0) setScrollOffset(getScrollOffset() - 1);
     }
 
     /**
@@ -94,29 +78,23 @@ public class OpenGui {
     /**
      * Obtient la page courante (0-indexed)
      */
-    public int getCurrentPage() {
-        return page;
-    }
+    public int getCurrentPage() { return getPage(); }
 
     /**
      * Obtient le nombre total de pages
      */
-    public int getTotalPages() {
-        return totalPages;
-    }
+    public abstract int getTotalPages();
 
     /**
      * Définit le nombre total de pages
      */
-    public void setTotalPages(int totalPages) {
-        this.totalPages = totalPages;
-    }
+    public abstract void setTotalPages(int totalPages);
 
     /**
      * Obtient la position de scroll
      */
     public int getScrollPosition() {
-        return scrollOffset;
+        return getScrollOffset();
     }
     
     /**

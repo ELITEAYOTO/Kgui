@@ -3,6 +3,8 @@ package me.krunsh.kgui.listeners;
 import me.krunsh.kgui.Kgui;
 import me.krunsh.kgui.actions.ActionOrigin;
 import me.krunsh.kgui.config.ConfigManager;
+import me.krunsh.kgui.api.InvalidationRequest;
+import me.krunsh.kgui.api.ProviderClickResult;
 import me.krunsh.kgui.gui.KguiInventoryHolder;
 import me.krunsh.kgui.render.ClickBinding;
 import me.krunsh.kgui.render.GuiClick;
@@ -23,6 +25,7 @@ import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.Inventory;
 
 import java.util.List;
+import java.util.Collections;
 
 /** Route les interactions exclusivement depuis la session et le slot rendus. */
 public final class GuiListener implements Listener {
@@ -71,6 +74,21 @@ public final class GuiListener implements Listener {
                 session.getMenuId(), binding.getId())) {
             plugin.getActionManager().executeActions(player, binding.getDenyActions());
             return;
+        }
+
+        if (binding.isProviderOwned()) {
+            ProviderClickResult result = plugin.getProviderEngine().click(player, session, binding, click);
+            if (result.shouldInvalidate()) {
+                plugin.getGuiInvalidationBus().publish(InvalidationRequest.playerMenu(
+                    player.getUniqueId(), session.getMenuId(),
+                    Collections.singleton(binding.getProviderItemId()), "provider-click"));
+            }
+            if (result.getStatus() == ProviderClickResult.Status.STALE
+                    || result.getStatus() == ProviderClickResult.Status.DENIED
+                    || result.getStatus() == ProviderClickResult.Status.ERROR) {
+                if (result.getMessageKey() != null) plugin.getMessageManager().send(player, result.getMessageKey());
+                return;
+            }
         }
 
         List<String> actions = binding.actionsFor(click);

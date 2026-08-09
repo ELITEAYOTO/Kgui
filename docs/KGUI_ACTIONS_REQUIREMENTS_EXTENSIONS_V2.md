@@ -42,6 +42,7 @@ sont retirées sur `PluginDisableEvent`.
 | `kgui:set_page` | `set_page` | Définit page/offset |
 | `kgui:scroll_up` | `scroll_up` | Remonte d'une ligne |
 | `kgui:scroll_down` | `scroll_down` | Descend d'une ligne |
+| `kgui:navigate` | `navigate` | Déplace le viewport ou choisit une position |
 | `kgui:delay` | `delay` | Retarde les actions suivantes, lié au token de session |
 | `kgui:confirm` | `confirm` | Confirmation consommable une fois |
 | `kgui:input_text` | `input_text` | Saisie texte bornée |
@@ -54,6 +55,15 @@ sont retirées sur `PluginDisableEvent`.
 | `vault:deposit` | `give_money` | Dépôt transactionnel strictement positif |
 | `playerpoints:take` | `take_points` | Retrait de points strictement positif |
 | `playerpoints:give` | `give_points` | Ajout de points strictement positif |
+
+L'action unifiée accepte exactement `direction=next|previous|up|down` avec un `step=1..100`
+facultatif, ou `page=N`. Ces formes ne peuvent pas être mélangées :
+
+```yaml
+click_actions:
+  - '[kgui:navigate] direction=next step=2'
+  - '[kgui:navigate] page=1'
+```
 
 `[op]` est définitivement interdit. Le compilateur refuse les nouveaux menus qui l'utilisent et le
 runtime refuse aussi les anciens fichiers déjà matérialisés. Kgui ne modifie jamais l'état OP d'un joueur.

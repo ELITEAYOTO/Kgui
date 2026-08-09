@@ -50,6 +50,7 @@ debug-disabled: "&7Mode debug désactivé."
 
 # Messages de pagination
 pagination-empty: "&7Aucun contenu à afficher."
+provider-click-error: "&cCette action dynamique n'est plus disponible. Réessayez."
 debug-requirement-failed: "&c[Debug] Requirement échoué: &e%type% &c- %reason%"
 debug-action-executed: "&a[Debug] Action exécutée: &e%action%"
 

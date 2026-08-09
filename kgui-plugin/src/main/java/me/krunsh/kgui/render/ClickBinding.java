@@ -20,10 +20,24 @@ public final class ClickBinding {
     private final List<String> shiftActions;
     private final List<String> middleActions;
     private final int cooldownTicks;
+    private final String providerId;
+    private final String providerItemId;
+    private final long providerRevision;
+    private final long providerGeneration;
+    private final int renderedSlot;
 
     private ClickBinding(String id, List<Map<String, Object>> requirements, List<String> denyActions,
                          List<String> actions, List<String> leftActions, List<String> rightActions,
                          List<String> shiftActions, List<String> middleActions, int cooldownTicks) {
+        this(id, requirements, denyActions, actions, leftActions, rightActions, shiftActions,
+            middleActions, cooldownTicks, null, null, -1L, -1L, -1);
+    }
+
+    private ClickBinding(String id, List<Map<String, Object>> requirements, List<String> denyActions,
+                         List<String> actions, List<String> leftActions, List<String> rightActions,
+                         List<String> shiftActions, List<String> middleActions, int cooldownTicks,
+                         String providerId, String providerItemId, long providerRevision,
+                         long providerGeneration, int renderedSlot) {
         this.id = Objects.requireNonNull(id, "id");
         this.requirements = immutableRequirements(requirements);
         this.denyActions = immutable(denyActions);
@@ -33,6 +47,11 @@ public final class ClickBinding {
         this.shiftActions = immutable(shiftActions);
         this.middleActions = immutable(middleActions);
         this.cooldownTicks = Math.max(0, cooldownTicks);
+        this.providerId = providerId;
+        this.providerItemId = providerItemId;
+        this.providerRevision = providerRevision;
+        this.providerGeneration = providerGeneration;
+        this.renderedSlot = renderedSlot;
     }
 
     public static ClickBinding forMenuItem(MenuItem item) {
@@ -41,11 +60,14 @@ public final class ClickBinding {
             item.getShiftClickActions(), item.getMiddleClickActions(), item.getCooldown());
     }
 
-    public static ClickBinding forDynamicItem(String id, List<String> actions, List<String> leftActions,
+    public static ClickBinding forProviderItem(String providerId, String itemId, long revision,
+                                               long generation, int renderedSlot,
+                                               List<String> actions, List<String> leftActions,
                                                List<String> rightActions, List<String> shiftActions) {
-        return new ClickBinding("provider:" + id, Collections.<Map<String, Object>>emptyList(),
-            Collections.<String>emptyList(), actions, leftActions, rightActions, shiftActions,
-            Collections.<String>emptyList(), 0);
+        return new ClickBinding("provider:" + providerId + ":" + itemId,
+            Collections.<Map<String, Object>>emptyList(), Collections.<String>emptyList(),
+            actions, leftActions, rightActions, shiftActions, Collections.<String>emptyList(), 0,
+            providerId, itemId, revision, generation, renderedSlot);
     }
 
     public String getId() {
@@ -65,8 +87,14 @@ public final class ClickBinding {
     }
 
     public boolean isProviderOwned() {
-        return id.startsWith("provider:");
+        return providerId != null || id.startsWith("provider:");
     }
+
+    public String getProviderId() { return providerId; }
+    public String getProviderItemId() { return providerItemId; }
+    public long getProviderRevision() { return providerRevision; }
+    public long getProviderGeneration() { return providerGeneration; }
+    public int getRenderedSlot() { return renderedSlot; }
 
     public List<String> actionsFor(GuiClick click) {
         if (click == null || click == GuiClick.UNSUPPORTED) return Collections.emptyList();
@@ -106,12 +134,18 @@ public final class ClickBinding {
             && requirements.equals(that.requirements) && denyActions.equals(that.denyActions)
             && actions.equals(that.actions) && leftActions.equals(that.leftActions)
             && rightActions.equals(that.rightActions) && shiftActions.equals(that.shiftActions)
-            && middleActions.equals(that.middleActions);
+            && middleActions.equals(that.middleActions)
+            && Objects.equals(providerId, that.providerId)
+            && Objects.equals(providerItemId, that.providerItemId)
+            && providerRevision == that.providerRevision
+            && providerGeneration == that.providerGeneration
+            && renderedSlot == that.renderedSlot;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, requirements, denyActions, actions, leftActions, rightActions,
-            shiftActions, middleActions, cooldownTicks);
+            shiftActions, middleActions, cooldownTicks, providerId, providerItemId,
+            providerRevision, providerGeneration, renderedSlot);
     }
 }

@@ -10,6 +10,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import me.krunsh.kgui.Kgui;
 import me.krunsh.kgui.menu.compiler.CompiledMenu;
+import me.krunsh.kgui.refresh.RefreshPolicy;
 
 /** Temporary adapter between the immutable V2 compiler and the Lot 3 renderer. */
 final class LegacyMenuMaterializer {
@@ -40,6 +41,13 @@ final class LegacyMenuMaterializer {
         menu.setBlockedRegions(config.getStringList("blocked_regions"));
         menu.setCooldown(config.getInt("cooldown", 0));
         menu.setUpdateInterval(config.getInt("update_interval", 0));
+        ConfigurationSection refresh = config.getConfigurationSection("refresh");
+        if (refresh != null) {
+            menu.setUpdateInterval(refresh.getInt("interval", menu.getUpdateInterval()));
+            menu.setRefreshPolicy(RefreshPolicy.parse(refresh.getString("policy"), menu.getUpdateInterval()));
+        } else {
+            menu.setRefreshPolicy(RefreshPolicy.parse(null, menu.getUpdateInterval()));
+        }
 
         ConfigurationSection pagination = config.getConfigurationSection("pagination");
         if (pagination != null && pagination.getBoolean("enabled", true)) {
@@ -64,6 +72,14 @@ final class LegacyMenuMaterializer {
     }
 
     private void applyPagination(MenuData menu, ConfigurationSection config) {
+        String navigation = config.getString("navigation");
+        if (navigation != null) {
+            if ("ROW_SCROLL".equalsIgnoreCase(navigation) || "SCROLL".equalsIgnoreCase(navigation)) {
+                menu.setMenuType(MenuType.SCROLL);
+            } else if ("PAGE".equalsIgnoreCase(navigation)) {
+                menu.setMenuType(MenuType.PAGINATION);
+            }
+        }
         menu.setContentSlots(parseSlots(config.get("content_slots")));
         menu.setPrevButtonSlot(config.getInt("prev_button_slot", -1));
         menu.setNextButtonSlot(config.getInt("next_button_slot", -1));
