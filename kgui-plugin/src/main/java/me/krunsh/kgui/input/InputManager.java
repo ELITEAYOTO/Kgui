@@ -146,10 +146,10 @@ public final class InputManager implements Listener {
         if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
         ConfirmSession session = confirmSessions.get(player.getUniqueId());
-        if (session == null || event.getView().getTopInventory() != session.inventory) return;
-
-        ConfirmHolder holder = holder(session.inventory);
-        if (holder == null || holder.token != session.token
+        Inventory top = event.getView().getTopInventory();
+        ConfirmHolder holder = holder(top);
+        if (session == null || holder == null || holder.inventory != session.inventory) return;
+        if (holder.token != session.token
                 || !holder.playerId.equals(player.getUniqueId())) return;
 
         event.setCancelled(true);
@@ -157,7 +157,7 @@ public final class InputManager implements Listener {
         int rawSlot = event.getRawSlot();
         GuiClick click = GuiClickPolicy.actionClick(event.getClick());
         if ((click != GuiClick.LEFT && click != GuiClick.RIGHT)
-                || event.getClickedInventory() != session.inventory
+                || event.getClickedInventory() != top
                 || (rawSlot != 11 && rawSlot != 15)) return;
 
         confirmSessions.remove(player.getUniqueId());
@@ -175,7 +175,7 @@ public final class InputManager implements Listener {
 
         ConfirmSession current = confirmSessions.get(player.getUniqueId());
         if (current == null || current.token != holder.token
-                || current.inventory != event.getView().getTopInventory()) return;
+                || current.inventory != holder.inventory) return;
         confirmSessions.remove(player.getUniqueId());
         scheduleCallback(player, current.token, current.onCancel);
     }

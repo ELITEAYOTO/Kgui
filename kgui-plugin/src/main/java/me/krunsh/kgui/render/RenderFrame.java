@@ -25,4 +25,10 @@ public final class RenderFrame {
     public RenderedSlot[] getSlots() {
         return slots.clone();
     }
+
+    public int occupiedSlots() {
+        int occupied = 0;
+        for (RenderedSlot slot : slots) if (slot != null) occupied++;
+        return occupied;
+    }
 }

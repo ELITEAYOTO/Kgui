@@ -35,6 +35,7 @@ public class KguiTabCompleter implements TabCompleter {
             if (sender.hasPermission("kgui.reload")) subCommands.add("reload");
             if (sender.hasPermission("kgui.reload")) subCommands.add("validate");
             if (sender.hasPermission("kgui.debug")) subCommands.add("debug");
+            if (sender.hasPermission("kgui.debug")) subCommands.add("diagnose");
             if (sender.hasPermission("kgui.debug")) subCommands.add("dump");
             if (sender.hasPermission("kgui.list")) subCommands.add("list");
             if (sender.hasPermission("kgui.info")) subCommands.add("info");
