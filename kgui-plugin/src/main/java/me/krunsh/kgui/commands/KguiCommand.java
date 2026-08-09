@@ -1,6 +1,7 @@
 package me.krunsh.kgui.commands;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -9,6 +10,9 @@ import org.bukkit.entity.Player;
 import me.krunsh.kgui.Kgui;
 import me.krunsh.kgui.gui.OpenGui;
 import me.krunsh.kgui.menu.MenuData;
+import me.krunsh.kgui.menu.MenuReloadResult;
+import me.krunsh.kgui.menu.compiler.CompiledMenu;
+import me.krunsh.kgui.menu.compiler.MenuDiagnostic;
 
 /**
  * Commande principale /kgui
@@ -36,7 +40,13 @@ public class KguiCommand implements CommandExecutor {
                 handleOpen(sender, args);
                 break;
             case "reload":
-                handleReload(sender);
+                handleReload(sender, args);
+                break;
+            case "validate":
+                handleValidate(sender);
+                break;
+            case "dump":
+                handleDump(sender, args);
                 break;
             case "debug":
                 handleDebug(sender, args);
@@ -111,7 +121,7 @@ public class KguiCommand implements CommandExecutor {
     /**
      * /kgui reload
      */
-    private void handleReload(CommandSender sender) {
+    private void handleReload(CommandSender sender, String[] args) {
         if (!sender.hasPermission("kgui.reload")) {
             plugin.getMessageManager().send(sender, "no-permission");
             return;
@@ -119,15 +129,80 @@ public class KguiCommand implements CommandExecutor {
 
         long start = System.currentTimeMillis();
         
-        // Recharger les configurations
-        plugin.reload();
+        MenuReloadResult result;
+        if (args.length >= 2) {
+            result = plugin.getMenuManager().reload(args[1]);
+            if (result.isSuccess() && plugin.getDynamicCommandManager() != null) {
+                plugin.getDynamicCommandManager().reload();
+            }
+        } else {
+            result = plugin.reload();
+        }
         
         long time = System.currentTimeMillis() - start;
         
-        plugin.getMessageManager().send(sender, "config-reloaded",
-            "items", String.valueOf(plugin.getItemRegistry().getItems().size()),
-            "menus", String.valueOf(plugin.getMenuManager().getMenus().size()),
-            "time", String.valueOf(time));
+        if (result.isSuccess()) {
+            String publication = result.getTarget() == null
+                ? "tous les menus ont été publiés" : "le menu '" + result.getTarget() + "' a été publié";
+            sender.sendMessage(ChatColor.GREEN + "Kgui: " + publication + " en " + time + " ms. "
+                + ChatColor.GRAY + "(" + result.getWarningCount() + " avertissement(s))");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Rechargement refusé: la configuration précédente reste active.");
+            sendDiagnostics(sender, result, 20);
+        }
+    }
+
+    private void handleValidate(CommandSender sender) {
+        if (!sender.hasPermission("kgui.reload")) {
+            plugin.getMessageManager().send(sender, "no-permission");
+            return;
+        }
+        long start = System.currentTimeMillis();
+        MenuReloadResult result = plugin.getMenuManager().validate();
+        long time = System.currentTimeMillis() - start;
+        if (result.isSuccess()) {
+            sender.sendMessage(ChatColor.GREEN + "Validation réussie: " + result.getMenuCount() + " menu(s), "
+                + result.getWarningCount() + " avertissement(s), " + time + " ms. Aucun cache modifié.");
+        } else {
+            sender.sendMessage(ChatColor.RED + "Validation échouée: " + result.getErrorCount() + " erreur(s), "
+                + result.getWarningCount() + " avertissement(s). Aucun cache modifié.");
+        }
+        sendDiagnostics(sender, result, 20);
+    }
+
+    private void handleDump(CommandSender sender, String[] args) {
+        if (!sender.hasPermission("kgui.debug")) {
+            plugin.getMessageManager().send(sender, "no-permission");
+            return;
+        }
+        if (args.length < 2) {
+            sender.sendMessage(ChatColor.RED + "Usage: /kgui dump <menu>");
+            return;
+        }
+        CompiledMenu menu = plugin.getMenuManager().getCompiledMenu(args[1]);
+        if (menu == null) {
+            plugin.getMessageManager().send(sender, "menu-not-found", "menu", args[1]);
+            return;
+        }
+        sender.sendMessage(ChatColor.GOLD + "--- Kgui dump: " + menu.getId() + " (schéma "
+            + menu.getSchemaVersion() + ") ---");
+        for (String line : menu.dump().split("\\r?\\n")) sender.sendMessage(ChatColor.GRAY + line);
+    }
+
+    private void sendDiagnostics(CommandSender sender, MenuReloadResult result, int limit) {
+        int emitted = 0;
+        for (MenuDiagnostic diagnostic : result.getDiagnostics()) {
+            if (emitted++ < limit) {
+                ChatColor color = diagnostic.isError() ? ChatColor.RED : ChatColor.YELLOW;
+                sender.sendMessage(color + diagnostic.format());
+            } else {
+                plugin.getLogger().warning(diagnostic.format());
+            }
+        }
+        if (result.getDiagnostics().size() > limit) {
+            sender.sendMessage(ChatColor.GRAY + "... " + (result.getDiagnostics().size() - limit)
+                + " diagnostic(s) supplémentaire(s) dans la console.");
+        }
     }
 
     /**

@@ -1,0 +1,37 @@
+schema_version: 2
+title: '&6&lExemple V2'
+size: 54
+type: pagination
+open_commands: [exemple, exemplegui]
+block_in_combat: true
+cooldown: 1
+update_interval: 0
+
+pagination:
+  enabled: true
+  content_slots: '10-16,19-25,28-34'
+  prev_button_slot: 45
+  next_button_slot: 53
+  max_pages: 0
+  provider: example_provider
+  provider_args:
+    category: all
+  empty_message: '&7Aucun résultat.'
+  empty_item:
+    material: BARRIER
+    display_name: '&cAucun résultat'
+
+items:
+  info:
+    slot: 4
+    material: BOOK
+    display_name: '&eInformations'
+    lore:
+      - ''
+      - '&7Page %page%/%max_page%'
+  close:
+    slot: 49
+    material: BARRIER
+    display_name: '&cFermer'
+    click_actions:
+      - '[close]'

@@ -1,3 +1,4 @@
+schema_version: 2
 title: "&6【&e&lQuêtes &6】&7Page %page%/%max_page%"
 size: 54
 type: paginated
