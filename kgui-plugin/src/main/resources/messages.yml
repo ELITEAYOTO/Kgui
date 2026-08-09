@@ -78,6 +78,7 @@ help:
     - "&e/kgui validate &7- Valide sans publier"
     - "&e/kgui dump <menu> &7- Affiche le YAML compilé"
     - "&e/kgui debug [player] &7- Active le mode debug"
+    - "&e/kgui diagnose &7- Affiche les metriques et l'etat des integrations"
     - "&e/kgui list &7- Liste tous les menus"
     - "&e/kgui info <menu> &7- Informations sur un menu"
 

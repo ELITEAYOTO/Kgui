@@ -43,6 +43,8 @@ public final class RefreshScheduler implements AutoCloseable {
         BoundedRefreshQueue.OfferResult result = queue.offer(request);
         if (result == BoundedRefreshQueue.OfferResult.QUEUED) metrics.refreshQueued();
         else if (result == BoundedRefreshQueue.OfferResult.COALESCED) metrics.refreshCoalesced();
+        else metrics.refreshRejected();
+        metrics.observeRefreshQueue(queue.size());
         return result;
     }
 
@@ -73,6 +75,7 @@ public final class RefreshScheduler implements AutoCloseable {
     }
 
     private void tick() {
+        long tickStarted = System.nanoTime();
         tick++;
         int dueBudget = maxRefreshesPerTick;
         while (dueBudget-- > 0 && !due.isEmpty() && due.peek().tick <= tick) {
@@ -88,6 +91,7 @@ public final class RefreshScheduler implements AutoCloseable {
         for (int index = 0; index < batch.size(); index++) {
             try {
                 executor.execute(batch.get(index));
+                metrics.refreshExecuted();
             } catch (RuntimeException error) {
                 plugin.getLogger().log(Level.WARNING, "Kgui refresh failed for "
                     + batch.get(index).getToken(), error);
@@ -99,6 +103,8 @@ public final class RefreshScheduler implements AutoCloseable {
                 break;
             }
         }
+        metrics.observeRefreshQueue(queue.size());
+        metrics.schedulerTick(System.nanoTime() - tickStarted);
     }
 
     @Override

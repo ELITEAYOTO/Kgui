@@ -53,6 +53,9 @@ public class KguiCommand implements CommandExecutor {
             case "debug":
                 handleDebug(sender, args);
                 break;
+            case "diagnose":
+                handleDiagnose(sender);
+                break;
             case "list":
                 handleList(sender);
                 break;
@@ -303,6 +306,68 @@ public class KguiCommand implements CommandExecutor {
             sender.sendMessage("§7- En combat: " + (plugin.getHookManager().getCombatTagHook().isInCombat(target) ? "§cOui" : "§aNon"));
         }
         
+    }
+
+    /** Etat machine-readable pour le harness et diagnostic console sans joueur connecte. */
+    private void handleDiagnose(CommandSender sender) {
+        if (!sender.hasPermission("kgui.debug")) {
+            plugin.getMessageManager().send(sender, "no-permission");
+            return;
+        }
+        MenuReloadResult validation = plugin.getMenuManager().validate();
+        GuiMetrics.Snapshot metrics = plugin.getGuiMetrics().snapshot();
+        sender.sendMessage("[Kgui Diagnose] status=" + (validation.isSuccess() ? "OK" : "ERROR")
+            + " version=" + plugin.getDescription().getVersion()
+            + " menus=" + validation.getMenuCount()
+            + " warnings=" + validation.getWarningCount()
+            + " errors=" + validation.getErrorCount());
+        sender.sendMessage("[Kgui Diagnose] sessions=" + plugin.getGuiManager().getActiveSessionCount()
+            + " indexed=" + plugin.getGuiInvalidationBus().indexedSessions()
+            + " refresh.pending=" + plugin.getRefreshScheduler().pendingCount()
+            + " refresh.periodic=" + plugin.getRefreshScheduler().periodicCount()
+            + " provider.cache=" + plugin.getProviderEngine().cacheSize());
+        sender.sendMessage("[Kgui Diagnose] provider.calls=" + metrics.providerCalls
+            + " provider.hits=" + metrics.providerCacheHits
+            + " provider.errors=" + metrics.providerErrors
+            + " placeholders=" + metrics.placeholderResolutions
+            + " render.slots=" + metrics.renderedSlots
+            + " sent.slots=" + metrics.slotsSent);
+        sender.sendMessage("[Kgui Diagnose] refresh.queued=" + metrics.refreshQueued
+            + " refresh.coalesced=" + metrics.refreshCoalesced
+            + " refresh.rejected=" + metrics.refreshRejected
+            + " refresh.executed=" + metrics.refreshExecuted
+            + " refresh.max_queue=" + metrics.maxRefreshQueue);
+        sender.sendMessage("[Kgui Diagnose] clicks.observed=" + metrics.clicksObserved
+            + " clicks.received=" + metrics.clicksReceived
+            + " clicks.route_rejected=" + metrics.clicksRouteRejected
+            + " clicks.authority_rejected=" + metrics.clicksAuthorityRejected
+            + " clicks.session_rejected=" + metrics.clicksSessionRejected
+            + " clicks.item_rejected=" + metrics.clicksItemRejected
+            + " clicks.actions=" + metrics.clickActions);
+        sender.sendMessage("[Kgui Diagnose] " + latency("open.static", metrics.staticOpenLatency)
+            + " " + latency("open.dynamic", metrics.dynamicOpenLatency));
+        sender.sendMessage("[Kgui Diagnose] " + latency("provider", metrics.providerLatency)
+            + " " + latency("render", metrics.renderLatency));
+        sender.sendMessage("[Kgui Diagnose] " + latency("scheduler", metrics.schedulerLatency)
+            + " scheduler.avg_ms=" + millis(metrics.schedulerTicks == 0L ? 0L
+                : metrics.schedulerNanos / metrics.schedulerTicks));
+        sender.sendMessage("[Kgui Diagnose] kfaction=" + plugin.getKfactionIntegrationManager().getState()
+            + " papi=" + plugin.getHookManager().isPlaceholderAPIEnabled()
+            + " vault=" + plugin.getHookManager().isVaultEnabled()
+            + " protocol_lib=" + plugin.getHookManager().isProtocolLibEnabled());
+        sendDiagnostics(sender, validation, 20);
+    }
+
+    private static String latency(String name, GuiMetrics.LatencySnapshot value) {
+        return name + ".count=" + value.count
+            + " " + name + ".p50_ms=" + millis(value.p50Nanos)
+            + " " + name + ".p95_ms=" + millis(value.p95Nanos)
+            + " " + name + ".p99_ms=" + millis(value.p99Nanos)
+            + " " + name + ".max_ms=" + millis(value.maxNanos);
+    }
+
+    private static String millis(long nanos) {
+        return String.format(java.util.Locale.ROOT, "%.3f", nanos / 1_000_000.0D);
     }
 
     /**

@@ -114,6 +114,7 @@ public class GuiManager {
 
     private boolean openMenuInternal(Player player, String menuId, int page,
                                      Map<String, String> arguments, boolean backNavigation) {
+        long openStarted = System.nanoTime();
         MenuData menuData = plugin.getMenuManager().getMenu(menuId);
         if (menuData == null) {
             plugin.getMessageManager().send(player, "menu-not-found", "menu", menuId);
@@ -196,6 +197,7 @@ public class GuiManager {
         // Exécuter les actions d'ouverture
         executeOpenActions(player, menuData);
         plugin.getRefreshScheduler().registerPeriodic(session.getToken(), menuData.getScheduledRefreshInterval());
+        plugin.getGuiMetrics().menuOpen(System.nanoTime() - openStarted, menuData.hasContentProvider());
         
         return true;
     }
@@ -287,7 +289,7 @@ public class GuiManager {
             }
         }
         RenderFrame result = renderer.finish(revision);
-        plugin.getGuiMetrics().render(System.nanoTime() - started);
+        plugin.getGuiMetrics().render(System.nanoTime() - started, result.occupiedSlots());
         return result;
     }
 
@@ -598,6 +600,7 @@ public class GuiManager {
      */
     public String parsePlaceholders(Player player, String text) {
         if (text == null) return "";
+        plugin.getGuiMetrics().placeholderResolutions(countPlaceholderTokens(text));
         
         // Placeholders internes (toujours calculés, très rapide)
         text = text.replace("%player%", player.getName())
@@ -621,6 +624,7 @@ public class GuiManager {
      */
     public String parsePlaceholders(Player player, String text, String menuId) {
         if (text == null) return "";
+        plugin.getGuiMetrics().placeholderResolutions(countPlaceholderTokens(text));
         
         // Placeholders internes
         text = text.replace("%player%", player.getName())
@@ -638,6 +642,20 @@ public class GuiManager {
         }
         
         return text;
+    }
+
+    private static int countPlaceholderTokens(String text) {
+        int count = 0;
+        int cursor = 0;
+        while (cursor < text.length()) {
+            int first = text.indexOf('%', cursor);
+            if (first < 0) break;
+            int second = text.indexOf('%', first + 1);
+            if (second < 0) break;
+            count++;
+            cursor = second + 1;
+        }
+        return count;
     }
 
     public String replaceViewportPlaceholders(Player player, String text, String menuId) {
@@ -826,6 +844,7 @@ public class GuiManager {
             RenderedSlot rendered = frame.get(slot);
             inventory.setItem(slot, rendered == null ? null : rendered.getItem());
         }
+        plugin.getGuiMetrics().slotsSent(frame.size());
     }
 
     public boolean navigateNext(Player player) {
@@ -894,8 +913,10 @@ public class GuiManager {
         if (menuData == null) return;
 
         Inventory currentInventory = session.getInventory();
+        Inventory openTop = player.getOpenInventory() == null
+            ? null : player.getOpenInventory().getTopInventory();
         if (!player.isOnline() || player.getOpenInventory() == null
-                || player.getOpenInventory().getTopInventory() != currentInventory) {
+                || resolveSession(player, openTop) != session) {
             return;
         }
 
@@ -948,6 +969,7 @@ public class GuiManager {
                 RenderedSlot rendered = nextFrame.get(slot);
                 currentInventory.setItem(slot, rendered == null ? null : rendered.getItem());
             }
+            plugin.getGuiMetrics().slotsSent(changed.size());
 
             KguiInventoryHolder currentHolder = KguiInventoryHolder.getHolder(currentInventory);
             if (currentHolder != null) {
@@ -989,9 +1011,14 @@ public class GuiManager {
         if (player == null || inventory == null) return null;
         KguiInventoryHolder holder = KguiInventoryHolder.getHolder(inventory);
         PlayerGuiSession session = sessions.get(player.getUniqueId());
+        // PandaSpigot may expose a distinct CraftInventory wrapper through the
+        // InventoryView. The holder still owns the exact inventory registered
+        // in the session, which is the stable identity boundary.
+        boolean holderOwnsSessionInventory = holder != null && session != null
+            && holder.getInventory() == session.getInventory();
         if (holder == null || !SessionAccessPolicy.allows(
                 player.getUniqueId(), holder.getPlayerUuid(), holder.getSessionId(),
-                holder.getRenderRevision(), session, session != null && session.getInventory() == inventory)) {
+                holder.getRenderRevision(), session, holderOwnsSessionInventory)) {
             return null;
         }
         RenderFrame frame = session.getFrame();

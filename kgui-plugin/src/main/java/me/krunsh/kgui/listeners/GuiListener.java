@@ -37,9 +37,11 @@ public final class GuiListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onInventoryClick(InventoryClickEvent event) {
+        plugin.getGuiMetrics().clickObserved();
         if (!(event.getWhoClicked() instanceof Player)) return;
         Inventory top = event.getView().getTopInventory();
         if (!KguiInventoryHolder.isKguiInventory(top)) return;
+        plugin.getGuiMetrics().clickReceived();
 
         event.setCancelled(true);
         event.setResult(Event.Result.DENY);
@@ -48,15 +50,24 @@ public final class GuiListener implements Listener {
         int rawSlot = event.getRawSlot();
         GuiClick click = GuiClickPolicy.actionClick(event.getClick());
         if (!InventoryInteractionPolicy.routeAction(
-                rawSlot, top.getSize(), event.getClickedInventory() == top, click)) return;
+                rawSlot, top.getSize(), event.getClickedInventory() == top, click)) {
+            plugin.getGuiMetrics().clickRouteRejected();
+            return;
+        }
 
+        PlayerGuiSession session = plugin.getGuiManager().resolveSession(player, top);
+        if (session == null) {
+            plugin.getGuiMetrics().clickSessionRejected();
+            return;
+        }
         RenderedSlot rendered = plugin.getGuiManager()
             .resolveClickedSlot(player, top, rawSlot, event.getCurrentItem());
-        if (rendered == null || rendered.getBinding() == null) return;
+        if (rendered == null || rendered.getBinding() == null) {
+            plugin.getGuiMetrics().clickItemRejected();
+            return;
+        }
 
         ClickBinding binding = rendered.getBinding();
-        PlayerGuiSession session = plugin.getGuiManager().resolveSession(player, top);
-        if (session == null) return;
 
         int cooldownTicks = binding.getCooldownTicks();
         long cooldownMs = cooldownTicks * 50L;
@@ -93,6 +104,7 @@ public final class GuiListener implements Listener {
 
         List<String> actions = binding.actionsFor(click);
         if (actions.isEmpty()) return;
+        plugin.getGuiMetrics().clickAction();
         if (cooldownTicks > 0) {
             plugin.getGuiManager().setItemCooldown(player, session.getMenuId(), binding.getId());
         }
