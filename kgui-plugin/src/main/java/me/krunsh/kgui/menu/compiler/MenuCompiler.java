@@ -40,14 +40,16 @@ public final class MenuCompiler {
         "schema_version", "id", "title", "size", "type", "template", "extends", "inherit_from",
         "open_command", "open_commands", "open_actions", "close_actions", "open_requirements",
         "permission", "block_in_combat", "allowed_worlds", "blocked_worlds", "open_on_region_enter",
-        "allowed_regions", "blocked_regions", "cooldown", "update_interval", "pagination",
+        "allowed_regions", "blocked_regions", "cooldown", "update_interval", "refresh", "pagination",
         "content_slots", "prev_button_slot", "next_button_slot", "max_pages", "provider",
         "provider_args", "empty_message", "empty_item", "items", "animations"
     );
     private static final Set<String> PAGINATION_KEYS = setOf(
-        "enabled", "content_slots", "prev_button_slot", "next_button_slot", "max_pages",
+        "enabled", "navigation", "content_slots", "prev_button_slot", "next_button_slot", "max_pages",
         "provider", "provider_args", "empty_message", "empty_item"
     );
+    private static final Set<String> REFRESH_KEYS = setOf("policy", "interval");
+    private static final Set<String> REFRESH_POLICIES = setOf("manual", "event", "interval", "hybrid");
     private static final Set<String> ITEM_KEYS = setOf(
         "slot", "slots", "item_id", "item", "material", "data", "display_name", "name", "lore",
         "glow", "skull", "skull_owner", "head_database", "hdb", "cit", "cit_key", "amount",
@@ -237,6 +239,11 @@ public final class MenuCompiler {
         if (document.root.containsKey("animations") && !(document.root.get("animations") instanceof Map)) {
             typeError(diagnostics, document, "animations", "une section YAML");
         }
+        Object refresh = document.root.get("refresh");
+        if (refresh != null) {
+            if (!(refresh instanceof Map)) typeError(diagnostics, document, "refresh", "une section YAML");
+            else validateRefresh(document, map(refresh), diagnostics);
+        }
     }
 
     private void validatePagination(SourceDocument document, Map<String, Object> pagination, String path,
@@ -249,6 +256,18 @@ public final class MenuCompiler {
         }
         if (pagination.containsKey("enabled") && !(pagination.get("enabled") instanceof Boolean)) {
             typeError(diagnostics, document, path + ".enabled", "un booléen");
+        }
+        if (pagination.containsKey("navigation")) {
+            Object navigation = pagination.get("navigation");
+            if (!(navigation instanceof String)) {
+                typeError(diagnostics, document, path + ".navigation", "PAGE ou ROW_SCROLL");
+            } else {
+                String mode = ((String) navigation).trim().toUpperCase(Locale.ROOT);
+                if (!"PAGE".equals(mode) && !"ROW_SCROLL".equals(mode) && !"SCROLL".equals(mode)) {
+                    error(diagnostics, document, "INVALID_NAVIGATION", path + ".navigation",
+                        "Le mode doit être PAGE ou ROW_SCROLL.");
+                }
+            }
         }
         for (String key : Arrays.asList("prev_button_slot", "next_button_slot", "max_pages")) {
             if (pagination.containsKey(key) && !(pagination.get(key) instanceof Number)) {
@@ -364,14 +383,14 @@ public final class MenuCompiler {
                 error(diagnostics, document, "NEGATIVE_VALUE", key, "La valeur ne peut pas être négative.");
             }
         }
-        validateSlotBounds(document, root.get("content_slots"), "content_slots", size, diagnostics);
+        validateContentSlots(document, root.get("content_slots"), "content_slots", size, diagnostics);
         validateButtonSlot(document, root.get("prev_button_slot"), "prev_button_slot", size, diagnostics);
         validateButtonSlot(document, root.get("next_button_slot"), "next_button_slot", size, diagnostics);
 
         Object paginationValue = root.get("pagination");
         if (paginationValue instanceof Map) {
             Map<String, Object> pagination = map(paginationValue);
-            validateSlotBounds(document, pagination.get("content_slots"), "pagination.content_slots", size, diagnostics);
+            validateContentSlots(document, pagination.get("content_slots"), "pagination.content_slots", size, diagnostics);
             validateButtonSlot(document, pagination.get("prev_button_slot"), "pagination.prev_button_slot", size, diagnostics);
             validateButtonSlot(document, pagination.get("next_button_slot"), "pagination.next_button_slot", size, diagnostics);
             if (pagination.containsKey("max_pages") && number(pagination.get("max_pages"), 0) < 0) {
@@ -520,6 +539,47 @@ public final class MenuCompiler {
                 error(diagnostics, document, "SLOT_OUT_OF_BOUNDS", path,
                     "Le slot " + slot + " est hors de l'inventaire (0-" + (size - 1) + ").");
             }
+        }
+    }
+
+    private void validateContentSlots(SourceDocument document, Object value, String path, int size,
+                                      List<MenuDiagnostic> diagnostics) {
+        if (value == null) return;
+        List<Integer> slots = parseSlots(document, value, path, diagnostics);
+        Set<Integer> unique = new HashSet<>();
+        for (Integer slot : slots) {
+            if (slot < 0 || slot >= size) {
+                error(diagnostics, document, "SLOT_OUT_OF_BOUNDS", path,
+                    "Le slot " + slot + " est hors de l'inventaire (0-" + (size - 1) + ").");
+            } else if (!unique.add(slot)) {
+                error(diagnostics, document, "DUPLICATE_CONTENT_SLOT", path,
+                    "Le slot de contenu " + slot + " est déclaré plusieurs fois.");
+            }
+        }
+    }
+
+    private void validateRefresh(SourceDocument document, Map<String, Object> refresh,
+                                 List<MenuDiagnostic> diagnostics) {
+        for (String key : refresh.keySet()) {
+            if (!REFRESH_KEYS.contains(key)) {
+                error(diagnostics, document, "UNKNOWN_KEY", "refresh." + key,
+                    "Clé inconnue dans la section refresh.");
+            }
+        }
+        Object policy = refresh.get("policy");
+        if (policy != null) {
+            if (!(policy instanceof String)) typeError(diagnostics, document, "refresh.policy", "une chaîne");
+            else if (!REFRESH_POLICIES.contains(((String) policy).trim().toLowerCase(Locale.ROOT))) {
+                error(diagnostics, document, "INVALID_REFRESH_POLICY", "refresh.policy",
+                    "La politique doit être MANUAL, EVENT, INTERVAL ou HYBRID.");
+            }
+        }
+        Object interval = refresh.get("interval");
+        if (interval != null && !(interval instanceof Number)) {
+            typeError(diagnostics, document, "refresh.interval", "un entier");
+        } else if (interval instanceof Number && ((Number) interval).intValue() < 0) {
+            error(diagnostics, document, "NEGATIVE_VALUE", "refresh.interval",
+                "La valeur ne peut pas être négative.");
         }
     }
 

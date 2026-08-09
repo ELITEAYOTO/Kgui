@@ -1,6 +1,10 @@
 package me.krunsh.kgui.session;
 
 import me.krunsh.kgui.gui.OpenGui;
+import me.krunsh.kgui.navigation.NavigationMode;
+import me.krunsh.kgui.navigation.ViewportLayout;
+import me.krunsh.kgui.navigation.ViewportState;
+import me.krunsh.kgui.provider.ProviderSnapshot;
 import me.krunsh.kgui.render.RenderFrame;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.scheduler.BukkitTask;
@@ -31,6 +35,9 @@ public final class PlayerGuiSession extends OpenGui {
     private long placeholderCacheTime;
     private long renderRevision;
     private RenderFrame frame;
+    private RenderFrame staticFrame;
+    private ViewportState viewport;
+    private ProviderSnapshot providerSnapshot;
     private boolean navigationLocked;
     private boolean closed;
     private CloseReason closeReason;
@@ -39,6 +46,7 @@ public final class PlayerGuiSession extends OpenGui {
         super(playerId, menuId, page, inventory);
         this.sessionId = sessionId;
         this.token = new SessionToken(playerId, sessionId);
+        this.viewport = new ViewportState(NavigationMode.NONE, ViewportLayout.empty(), page);
     }
 
     public long getSessionId() {
@@ -68,6 +76,33 @@ public final class PlayerGuiSession extends OpenGui {
 
     public synchronized void setFrame(RenderFrame frame) {
         if (!closed) this.frame = frame;
+    }
+
+    public synchronized RenderFrame getStaticFrame() { return staticFrame; }
+
+    public synchronized void setStaticFrame(RenderFrame staticFrame) {
+        if (!closed) this.staticFrame = staticFrame;
+    }
+
+    public synchronized ViewportState getViewport() { return viewport; }
+
+    public synchronized void setViewport(ViewportState viewport) {
+        if (!closed && viewport != null) this.viewport = viewport;
+    }
+
+    public synchronized ProviderSnapshot getProviderSnapshot() { return providerSnapshot; }
+
+    public synchronized void setProviderSnapshot(ProviderSnapshot providerSnapshot) {
+        if (!closed) this.providerSnapshot = providerSnapshot;
+    }
+
+    @Override public synchronized int getPage() { return viewport.getPage(); }
+    @Override public synchronized void setPage(int page) { viewport.setPage(Math.max(1, page)); }
+    @Override public synchronized int getTotalPages() { return viewport.getMaxPage(); }
+    @Override public synchronized void setTotalPages(int pages) { viewport.reconcile(-1, Math.max(1, pages)); }
+    @Override public synchronized int getScrollOffset() { return viewport.getRowOffset(); }
+    @Override public synchronized void setScrollOffset(int offset) {
+        viewport.setPage(Math.max(0, offset) + 1);
     }
 
     public Deque<String> getHistory() {
@@ -141,6 +176,9 @@ public final class PlayerGuiSession extends OpenGui {
         placeholderCache.clear();
         cooldowns.clear();
         frame = null;
+        staticFrame = null;
+        providerSnapshot = null;
+        viewport = new ViewportState(NavigationMode.NONE, ViewportLayout.empty(), 1);
         setInventory(null);
         navigationLocked = false;
         return true;
@@ -152,7 +190,9 @@ public final class PlayerGuiSession extends OpenGui {
 
     public synchronized int retainedStateSize() {
         return history.size() + runtimeArguments.size() + placeholderCache.size()
-            + cooldowns.size() + tasks.size() + (frame == null ? 0 : frame.size());
+            + cooldowns.size() + tasks.size() + (frame == null ? 0 : frame.size())
+            + (staticFrame == null ? 0 : staticFrame.size())
+            + (providerSnapshot == null ? 0 : providerSnapshot.getItems().size());
     }
 
     public Map<String, Map<String, String>> runtimeArgumentsView() {

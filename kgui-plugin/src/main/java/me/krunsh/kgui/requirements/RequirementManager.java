@@ -151,7 +151,7 @@ public final class RequirementManager {
             String parsed = parseStrict(player, string(data.get("expression")));
             if (parsed == null) return false;
             String currentMenu = plugin.getGuiManager().getPlayerCurrentMenu(player);
-            if (currentMenu != null) parsed = plugin.getPaginationManager().replacePlaceholders(parsed, player, currentMenu);
+            if (currentMenu != null) parsed = plugin.getGuiManager().replaceViewportPlaceholders(player, parsed, currentMenu);
             return !hasUnresolvedPlaceholder(parsed) && expressions.evaluate(parsed);
         }, "javascript");
 
@@ -314,7 +314,7 @@ public final class RequirementManager {
                 String expression = parseStrict(player, string(data.get("expression")));
                 if (expression == null) return false;
                 String menuId = plugin.getGuiManager().getPlayerCurrentMenu(player);
-                if (menuId != null) expression = plugin.getPaginationManager().replacePlaceholders(expression, player, menuId);
+                if (menuId != null) expression = plugin.getGuiManager().replaceViewportPlaceholders(player, expression, menuId);
                 return !hasUnresolvedPlaceholder(expression) && expressions.evaluateResult(expression) != null;
             }
             case "kgui:item": {

@@ -60,6 +60,17 @@ performance:
   # Nombre maximum de menus en cache
   max_cached_menus: 100
 
+  # Snapshots providers neutres conservés au maximum (LRU global borné)
+  provider_cache_entries: 2048
+
+  # Temps d'appel provider à partir duquel un avertissement est émis
+  provider_slow_warning_ms: 2.0
+
+  # File et budget du scheduler de refresh événementiel
+  max_pending_refreshes: 2048
+  max_refreshes_per_tick: 32
+  refresh_budget_nanos: 2000000
+
 # ==============================================================
 # ANIMATIONS
 # ==============================================================

@@ -9,6 +9,8 @@ import org.bukkit.entity.Player;
 
 import me.krunsh.kgui.Kgui;
 import me.krunsh.kgui.gui.OpenGui;
+import me.krunsh.kgui.metrics.GuiMetrics;
+import me.krunsh.kgui.session.PlayerGuiSession;
 import me.krunsh.kgui.menu.MenuData;
 import me.krunsh.kgui.menu.MenuReloadResult;
 import me.krunsh.kgui.menu.compiler.CompiledMenu;
@@ -238,6 +240,12 @@ public class KguiCommand implements CommandExecutor {
             sender.sendMessage("§7Menu ouvert: §a" + openGui.getMenuData().getId());
             sender.sendMessage("§7Page: §a" + openGui.getCurrentPage() + "/" + openGui.getTotalPages());
             sender.sendMessage("§7Position scroll: §a" + openGui.getScrollPosition());
+            if (openGui instanceof PlayerGuiSession) {
+                PlayerGuiSession session = (PlayerGuiSession) openGui;
+                sender.sendMessage("§7Mode viewport: §a" + session.getViewport().getMode());
+                sender.sendMessage("§7Révision provider: §a" + (session.getProviderSnapshot() == null
+                    ? "aucune" : session.getProviderSnapshot().getRevision()));
+            }
         } else {
             sender.sendMessage("§7Menu ouvert: §cAucun");
         }
@@ -253,6 +261,28 @@ public class KguiCommand implements CommandExecutor {
         sender.sendMessage("§7- CombatTag: " + (plugin.getHookManager().isCombatTagEnabled() ? "§a✓" : "§c✗"));
         sender.sendMessage("§7- ProtocolLib: " + (plugin.getHookManager().isProtocolLibEnabled() ? "§a✓" : "§c✗"));
         sender.sendMessage("§7- HeadDatabase: " + (plugin.getHookManager().isHeadDatabaseEnabled() ? "§a✓" : "§c✗"));
+
+        GuiMetrics.Snapshot metrics = plugin.getGuiMetrics().snapshot();
+        sender.sendMessage("");
+        sender.sendMessage("§6§lRuntime V2:");
+        sender.sendMessage("§7- Providers: §a" + metrics.providerCalls + " appels, "
+            + metrics.providerCacheHits + " hits, " + metrics.providerErrors + " erreurs");
+        double providerAverageMs = metrics.providerCalls == 0L ? 0.0D
+            : metrics.providerNanos / 1_000_000.0D / metrics.providerCalls;
+        double renderAverageMs = metrics.renders == 0L ? 0.0D
+            : metrics.renderNanos / 1_000_000.0D / metrics.renders;
+        sender.sendMessage("§7- Temps moyen provider/rendu: §a"
+            + String.format("%.3f/%.3f ms", providerAverageMs, renderAverageMs));
+        sender.sendMessage("§7- Rendus/diffs: §a" + metrics.renders + "/" + metrics.diffRuns
+            + " §7(" + metrics.changedSlots + " slots modifiés)");
+        sender.sendMessage("§7- Réouvertures/invalidation: §a" + metrics.inventoryReopens
+            + "/" + metrics.invalidations + " §7| cache provider: §a"
+            + plugin.getProviderEngine().cacheSize());
+        sender.sendMessage("§7- File refresh: §a" + plugin.getRefreshScheduler().pendingCount()
+            + " §7| périodiques: §a" + plugin.getRefreshScheduler().periodicCount()
+            + " §7| sessions indexées: §a" + plugin.getGuiInvalidationBus().indexedSessions());
+        sender.sendMessage("§7- Refresh demandés/coalescés: §a" + metrics.refreshQueued
+            + "/" + metrics.refreshCoalesced);
         
         // Économie
         if (plugin.getHookManager().isVaultEnabled()) {

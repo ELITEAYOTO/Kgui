@@ -6,7 +6,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import me.krunsh.kgui.actions.ActionManager;
 import me.krunsh.kgui.animations.AnimationManager;
-import me.krunsh.kgui.api.ContentProviderManager;
 import me.krunsh.kgui.api.KguiApi;
 import me.krunsh.kgui.commands.DynamicCommandManager;
 import me.krunsh.kgui.commands.KguiCommand;
@@ -23,8 +22,10 @@ import me.krunsh.kgui.listeners.GuiListener;
 import me.krunsh.kgui.listeners.SecurityListener;
 import me.krunsh.kgui.menu.MenuManager;
 import me.krunsh.kgui.menu.MenuReloadResult;
-import me.krunsh.kgui.pagination.PaginationManager;
-import me.krunsh.kgui.pagination.ScrollManager;
+import me.krunsh.kgui.metrics.GuiMetrics;
+import me.krunsh.kgui.provider.ProviderEngine;
+import me.krunsh.kgui.refresh.GuiInvalidationBus;
+import me.krunsh.kgui.refresh.RefreshScheduler;
 import me.krunsh.kgui.requirements.RequirementManager;
 import me.krunsh.kgui.service.KguiApiProvider;
 import me.krunsh.kgui.session.CloseReason;
@@ -51,10 +52,6 @@ public class Kgui extends JavaPlugin {
     private RequirementManager requirementManager;
     private ActionManager actionManager;
     
-    // Phase 2 Managers
-    private PaginationManager paginationManager;
-    private ScrollManager scrollManager;
-    
     // Phase 3 Managers - Input System
     private InputManager inputManager;
     private ChatInputListener chatInputListener;
@@ -63,11 +60,12 @@ public class Kgui extends JavaPlugin {
     // Dynamic Commands
     private DynamicCommandManager dynamicCommandManager;
     
-    // API: Content Providers for external plugins
-    private ContentProviderManager contentProviderManager;
-
     // API publique V2 publiee via le ServicesManager Bukkit
     private KguiApiProvider apiProvider;
+    private GuiMetrics guiMetrics;
+    private ProviderEngine providerEngine;
+    private RefreshScheduler refreshScheduler;
+    private GuiInvalidationBus guiInvalidationBus;
 
     @Override
     public void onEnable() {
@@ -93,8 +91,7 @@ public class Kgui extends JavaPlugin {
         // Enregistrer les commandes dynamiques des menus
         registerDynamicCommands();
         
-        // Démarrer la tâche d'auto-refresh
-        guiManager.startAutoRefreshTask();
+        refreshScheduler.start();
         
         long loadTime = System.currentTimeMillis() - startTime;
         getLogger().info("v" + getDescription().getVersion() + " enabled in " + loadTime + "ms | " 
@@ -105,10 +102,7 @@ public class Kgui extends JavaPlugin {
     public void onDisable() {
         shutdownApi();
 
-        // Arrêter l'auto-refresh
-        if (guiManager != null) {
-            guiManager.stopAutoRefreshTask();
-        }
+        if (refreshScheduler != null) refreshScheduler.close();
         
         // Fermer tous les menus ouverts
         if (guiManager != null) {
@@ -122,6 +116,8 @@ public class Kgui extends JavaPlugin {
         if (inputManager != null) inputManager.cleanup();
         if (chatInputListener != null) chatInputListener.cleanup();
         if (playerDataManager != null) playerDataManager.cleanup();
+        if (guiInvalidationBus != null) guiInvalidationBus.close();
+        if (providerEngine != null) providerEngine.close();
         if (hookManager != null) hookManager.close();
         
         getLogger().info("Kgui disabled.");
@@ -175,20 +171,28 @@ public class Kgui extends JavaPlugin {
         this.requirementManager = new RequirementManager(this, apiProvider);
         this.actionManager = new ActionManager(this, apiProvider);
         
-        // 4. Phase 2 Managers - Pagination
-        this.paginationManager = new PaginationManager(this);
-        this.scrollManager = new ScrollManager(this);
-        
-        // 5. Item Registry
+        // 4. Item Registry
         this.itemRegistry = new ItemRegistry(this);
         
-        // 6. Menu Manager
+        // 5. Menu Manager
         this.menuManager = new MenuManager(this);
+
+        this.guiMetrics = new GuiMetrics();
+        int providerCacheEntries = configManager.getConfig().getInt("performance.provider_cache_entries", 2048);
+        long slowProviderNanos = (long) (configManager.getConfig()
+            .getDouble("performance.provider_slow_warning_ms", 2.0D) * 1_000_000.0D);
+        this.providerEngine = new ProviderEngine(this, apiProvider, guiMetrics,
+            providerCacheEntries, slowProviderNanos);
         
-        // 7. GUI Manager (gestion des inventaires ouverts)
+        // 6. GUI Manager (gestion des inventaires ouverts)
         this.guiManager = new GuiManager(this);
+        this.refreshScheduler = new RefreshScheduler(this, guiManager::performScheduledRefresh, guiMetrics,
+            configManager.getConfig().getInt("performance.max_pending_refreshes", 2048),
+            configManager.getConfig().getInt("performance.max_refreshes_per_tick", 32),
+            configManager.getConfig().getLong("performance.refresh_budget_nanos", 2_000_000L));
+        this.guiInvalidationBus = new GuiInvalidationBus(refreshScheduler, providerEngine, guiMetrics);
         
-        // 8. Animation Manager
+        // 7. Animation Manager
         this.animationManager = new AnimationManager(this);
         
         // 9. Phase 3 - Input System
@@ -196,8 +200,6 @@ public class Kgui extends JavaPlugin {
         this.chatInputListener = new ChatInputListener(this);
         this.inputManager = new InputManager(this);
         
-        // 10. API: Content Provider Manager for external plugins
-        this.contentProviderManager = new ContentProviderManager(this);
     }
 
     /**
@@ -310,14 +312,6 @@ public class Kgui extends JavaPlugin {
         return actionManager;
     }
 
-    public PaginationManager getPaginationManager() {
-        return paginationManager;
-    }
-
-    public ScrollManager getScrollManager() {
-        return scrollManager;
-    }
-
     public InputManager getInputManager() {
         return inputManager;
     }
@@ -334,16 +328,13 @@ public class Kgui extends JavaPlugin {
         return dynamicCommandManager;
     }
 
-    /**
-     * Get the ContentProviderManager for registering dynamic content providers.
-     * External plugins can use this to register their own pagination content.
-     * @return The ContentProviderManager instance
-     */
-    public ContentProviderManager getContentProviderManager() {
-        return contentProviderManager;
-    }
-
     public KguiApi getApi() {
         return apiProvider;
     }
+
+    public KguiApiProvider getApiProvider() { return apiProvider; }
+    public GuiMetrics getGuiMetrics() { return guiMetrics; }
+    public ProviderEngine getProviderEngine() { return providerEngine; }
+    public RefreshScheduler getRefreshScheduler() { return refreshScheduler; }
+    public GuiInvalidationBus getGuiInvalidationBus() { return guiInvalidationBus; }
 }

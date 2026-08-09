@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -31,6 +32,7 @@ import me.krunsh.kgui.api.OwnedRegistration;
 import me.krunsh.kgui.api.ProviderRegistration;
 import me.krunsh.kgui.api.RequirementHandler;
 import me.krunsh.kgui.api.RequirementRegistration;
+import me.krunsh.kgui.provider.RegisteredContentProvider;
 
 /** Implementation Bukkit du contrat public Kgui 2.0. */
 public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
@@ -40,6 +42,7 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
     private final Map<String, Extension<RequirementHandler>> requirements = new ConcurrentHashMap<>();
     private final Map<String, Extension<Set<String>>> menuPacks = new ConcurrentHashMap<>();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicLong generations = new AtomicLong();
 
     public KguiApiProvider(Kgui plugin) {
         if (plugin == null) throw new IllegalArgumentException("plugin must not be null");
@@ -77,6 +80,7 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
     @Override
     public ProviderRegistration registerProvider(Plugin owner, String providerId, ContentProvider provider) {
         String id = register(providers, owner, providerId, provider);
+        notifyProviderChanged(id);
         return new ProviderHandle(id, owner, providers, this::remove);
     }
 
@@ -102,46 +106,24 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
     @Override
     public void invalidate(InvalidationRequest request) {
         if (request == null || closed.get() || !plugin.isEnabled()) return;
-        Runnable invalidation = () -> performInvalidation(request);
-        if (Bukkit.isPrimaryThread()) {
-            invalidation.run();
-        } else {
-            Bukkit.getScheduler().runTask(plugin, invalidation);
-        }
+        // Le bus, son index, le cache et la file sont synchronisés. Le travail
+        // Bukkit réel reste exclusivement exécuté par RefreshScheduler au tick.
+        performInvalidation(request);
     }
 
     private void performInvalidation(InvalidationRequest request) {
-        switch (request.getScope()) {
-            case PLAYER_MENU:
-            case PLAYER:
-                Player player = Bukkit.getPlayer(request.getPlayerId());
-                if (player == null || !player.isOnline()) return;
-                if (request.getScope() == InvalidationRequest.Scope.PLAYER_MENU) {
-                    String current = plugin.getGuiManager().getPlayerCurrentMenu(player);
-                    if (current == null || !current.equalsIgnoreCase(request.getMenuId())) return;
-                }
-                plugin.getGuiManager().refreshMenu(player);
-                return;
-            case MENU:
-                plugin.getGuiManager().refreshMatchingMenus(request.getMenuId(), null);
-                return;
-            case PROVIDER:
-                plugin.getGuiManager().refreshMatchingMenus(null, request.getProviderId());
-                return;
-            case ALL:
-                plugin.getGuiManager().refreshMatchingMenus(null, null);
-                return;
-            default:
-        }
+        if (plugin.getGuiInvalidationBus() != null) plugin.getGuiInvalidationBus().publish(request);
     }
 
     @Override
     public void unregisterAll(Plugin owner) {
         if (owner == null) return;
+        Set<String> removedProviders = ownedIds(providers, owner);
         removeOwned(providers, owner);
         removeOwned(actions, owner);
         removeOwned(requirements, owner);
         removeOwned(menuPacks, owner);
+        for (String id : removedProviders) notifyProviderChanged(id);
     }
 
     public Set<ExtensionCapability> getCapabilities(Plugin owner) {
@@ -185,6 +167,13 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
         return activeValue(extension);
     }
 
+    public RegisteredContentProvider resolveProvider(String id) {
+        Extension<ContentProvider> extension = providers.get(normalizeLookup(id));
+        if (extension == null || !extension.owner.isEnabled()) return null;
+        return new RegisteredContentProvider(normalizeLookup(id), extension.owner,
+            extension.value, extension.generation);
+    }
+
     public ActionHandler findAction(String id) {
         Extension<ActionHandler> extension = actions.get(normalizeLookup(id));
         return activeValue(extension);
@@ -200,14 +189,16 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
         if (owner == null || value == null) throw new IllegalArgumentException("owner and extension must not be null");
         if (!owner.isEnabled()) throw new IllegalStateException("Extension owner is disabled: " + owner.getName());
         String id = normalizeOwnedId(owner, requestedId);
-        Extension<T> previous = registry.putIfAbsent(id, new Extension<>(owner, value));
+        Extension<T> previous = registry.putIfAbsent(id,
+            new Extension<>(owner, value, generations.incrementAndGet()));
         if (previous != null) throw new IllegalStateException("Extension already registered: " + id);
         return id;
     }
 
     private <T> void remove(Map<String, Extension<T>> registry, String id, Plugin owner) {
         Extension<T> current = registry.get(id);
-        if (current != null && current.owner == owner) registry.remove(id, current);
+        if (current != null && current.owner == owner && registry.remove(id, current)
+                && (Object) registry == providers) notifyProviderChanged(id);
     }
 
     private static <T> void removeOwned(Map<String, Extension<T>> registry, Plugin owner) {
@@ -219,6 +210,14 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
     private static <T> boolean hasOwner(Map<String, Extension<T>> registry, Plugin owner) {
         for (Extension<T> extension : registry.values()) if (extension.owner == owner) return true;
         return false;
+    }
+
+    private static <T> Set<String> ownedIds(Map<String, Extension<T>> registry, Plugin owner) {
+        Set<String> ids = new LinkedHashSet<>();
+        for (Map.Entry<String, Extension<T>> entry : registry.entrySet()) {
+            if (entry.getValue().owner == owner) ids.add(entry.getKey());
+        }
+        return ids;
     }
 
     private static <T> T activeValue(Extension<T> extension) {
@@ -261,7 +260,16 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
     private static final class Extension<T> {
         private final Plugin owner;
         private final T value;
-        private Extension(Plugin owner, T value) { this.owner = owner; this.value = value; }
+        private final long generation;
+        private Extension(Plugin owner, T value, long generation) {
+            this.owner = owner; this.value = value; this.generation = generation;
+        }
+    }
+
+    private void notifyProviderChanged(String id) {
+        if (id == null || plugin.getGuiInvalidationBus() == null) return;
+        if (plugin.getProviderEngine() != null) plugin.getProviderEngine().providerRemoved(id);
+        plugin.getGuiInvalidationBus().publish(InvalidationRequest.provider(id, "provider-registration-changed"));
     }
 
     private abstract static class AbstractHandle<T> implements OwnedRegistration {
