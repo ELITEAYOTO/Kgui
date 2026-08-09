@@ -4,4 +4,11 @@
 *.iml
 *.class
 *.log
+*.hprof
+
+# Runtime folders created when the plugin is launched from the repository
+/menus/
+/templates/
+/plugins/
+/logs/
 dependency-reduced-pom.xml
