@@ -1,9 +1,0 @@
-Summary for C:\Users\timot\Desktop\minecraft\SparrowMCALL\Kgui\libs\PlayerKits2-1.22.2.jar
-Decompiled with CFR 0.152
-
-
-pk.ajneb97.libs.hikaricp.pool.HikariPool
-----------------------------
-
-getConnection(long )
-  Exception : org.benf.cfr.reader.util.ConfusedCFRException: Tried to end blocks [6[WHILELOOP]], but top level block is 2[TRYBLOCK]
