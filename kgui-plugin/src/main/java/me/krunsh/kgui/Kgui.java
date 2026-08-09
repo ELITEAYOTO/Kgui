@@ -122,6 +122,7 @@ public class Kgui extends JavaPlugin {
         if (inputManager != null) inputManager.cleanup();
         if (chatInputListener != null) chatInputListener.cleanup();
         if (playerDataManager != null) playerDataManager.cleanup();
+        if (hookManager != null) hookManager.close();
         
         getLogger().info("Kgui disabled.");
         instance = null;
@@ -171,7 +172,7 @@ public class Kgui extends JavaPlugin {
         this.hookManager = new HookManager(this);
         
         // 3. Requirements et Actions (avant items/menus car ils les utilisent)
-        this.requirementManager = new RequirementManager(this);
+        this.requirementManager = new RequirementManager(this, apiProvider);
         this.actionManager = new ActionManager(this, apiProvider);
         
         // 4. Phase 2 Managers - Pagination
@@ -206,16 +207,7 @@ public class Kgui extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new GuiListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SecurityListener(this), this);
         Bukkit.getPluginManager().registerEvents(chatInputListener, this);
-        
-        // Listener WorldGuard si activé
-        if (hookManager.isWorldGuardEnabled()) {
-            hookManager.getWorldGuardHook().registerListeners();
-        }
-        
-        // Listener CombatTag si activé
-        if (hookManager.isCombatTagEnabled()) {
-            hookManager.getCombatTagHook().registerListeners();
-        }
+        Bukkit.getPluginManager().registerEvents(hookManager, this);
     }
 
     /**

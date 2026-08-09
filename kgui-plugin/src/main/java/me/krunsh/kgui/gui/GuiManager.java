@@ -227,7 +227,9 @@ public class GuiManager {
         return plugin.getRequirementManager().checkRequirements(
             player, 
             menuData.getOpenRequirements(), 
-            true
+            true,
+            menuData.getId(),
+            null
         );
     }
 
@@ -271,7 +273,8 @@ public class GuiManager {
         
         for (MenuItem menuItem : sortedItems) {
             // Vérifier les view requirements
-            if (!plugin.getRequirementManager().checkRequirements(player, menuItem.getViewRequirements(), false)) {
+            if (!plugin.getRequirementManager().checkRequirements(player, menuItem.getViewRequirements(), false,
+                    menuData.getId(), menuItem.getKey())) {
                 continue;
             }
             

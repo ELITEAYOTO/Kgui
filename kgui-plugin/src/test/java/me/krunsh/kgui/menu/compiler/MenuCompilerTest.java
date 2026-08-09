@@ -193,6 +193,19 @@ public class MenuCompilerTest {
         assertEquals("Child", item.getConfig().get("display_name"));
     }
 
+    @Test
+    public void opActionIsRejectedWhileNamespacedActionsCompile() throws Exception {
+        Layout layout = layout();
+        write(layout.menus, "actions.yml",
+            "schema_version: 2\nsize: 9\nopen_actions: ['[kgui:message] safe']\nitems:\n" +
+            "  unsafe:\n    slot: 0\n    material: STONE\n    click_actions: ['[op] stop']\n");
+
+        MenuCompilationResult result = new MenuCompiler(layout.templates, layout.menus).compileAll();
+
+        assertFalse(result.isSuccess());
+        assertNotNull(find(result, "FORBIDDEN_OP_ACTION"));
+    }
+
     private Layout layout() throws Exception {
         File root = temporary.newFolder();
         File templates = new File(root, "templates");

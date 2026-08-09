@@ -253,7 +253,6 @@ public class KguiCommand implements CommandExecutor {
         sender.sendMessage("§7- CombatTag: " + (plugin.getHookManager().isCombatTagEnabled() ? "§a✓" : "§c✗"));
         sender.sendMessage("§7- ProtocolLib: " + (plugin.getHookManager().isProtocolLibEnabled() ? "§a✓" : "§c✗"));
         sender.sendMessage("§7- HeadDatabase: " + (plugin.getHookManager().isHeadDatabaseEnabled() ? "§a✓" : "§c✗"));
-        sender.sendMessage("§7- Factions: " + (plugin.getHookManager().isFactionsEnabled() ? "§a✓" : "§c✗"));
         
         // Économie
         if (plugin.getHookManager().isVaultEnabled()) {
@@ -272,14 +271,6 @@ public class KguiCommand implements CommandExecutor {
             sender.sendMessage("§7- En combat: " + (plugin.getHookManager().getCombatTagHook().isInCombat(target) ? "§cOui" : "§aNon"));
         }
         
-        // Kfaction
-        if (plugin.getHookManager().isKfactionEnabled()) {
-            sender.sendMessage("");
-            sender.sendMessage("§6§lFaction:");
-            sender.sendMessage("§7- Faction: §a" + plugin.getHookManager().getKfactionHook().getFactionName(target));
-            sender.sendMessage("§7- Rôle: §a" + plugin.getHookManager().getKfactionHook().getRole(target));
-            sender.sendMessage("§7- Power: §a" + plugin.getHookManager().getKfactionHook().getFactionPower(target));
-        }
     }
 
     /**

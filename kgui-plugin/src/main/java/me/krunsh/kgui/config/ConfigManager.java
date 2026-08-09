@@ -21,7 +21,6 @@ public class ConfigManager {
     private boolean cleanOnClose;
     private boolean cleanOnWorldChange;
     private boolean cleanOnQuit;
-    private boolean blockAuctionHouse;
     private boolean blockInCombat;
     private boolean closeOnCombat;
     private int cooldownAfterCombat;
@@ -66,7 +65,6 @@ public class ConfigManager {
         this.cleanOnClose = config.getBoolean("security.clean_on_close", true);
         this.cleanOnWorldChange = config.getBoolean("security.clean_on_world_change", true);
         this.cleanOnQuit = config.getBoolean("security.clean_on_quit", true);
-        this.blockAuctionHouse = config.getBoolean("security.block_auction_house", true);
         
         // Combat
         this.blockInCombat = config.getBoolean("combat.block_in_combat", true);
@@ -159,10 +157,6 @@ public class ConfigManager {
 
     public boolean isCleanOnQuit() {
         return cleanOnQuit;
-    }
-
-    public boolean isBlockAuctionHouse() {
-        return blockAuctionHouse;
     }
 
     public boolean isBlockInCombat() {

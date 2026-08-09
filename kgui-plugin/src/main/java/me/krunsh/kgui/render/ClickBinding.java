@@ -64,6 +64,10 @@ public final class ClickBinding {
         return cooldownTicks;
     }
 
+    public boolean isProviderOwned() {
+        return id.startsWith("provider:");
+    }
+
     public List<String> actionsFor(GuiClick click) {
         if (click == null || click == GuiClick.UNSUPPORTED) return Collections.emptyList();
         List<String> selected;

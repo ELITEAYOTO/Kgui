@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.InvalidConfigurationException;
@@ -30,6 +32,7 @@ import me.krunsh.kgui.menu.MenuType;
  * inheritance and returns immutable models. It never mutates the live registry.
  */
 public final class MenuCompiler {
+    private static final Pattern ACTION_SYNTAX = Pattern.compile("^\\[([a-zA-Z0-9_.:/-]+)](?:\\s+.*)?$");
     public static final int SCHEMA_VERSION = 2;
     private static final long MAX_SOURCE_BYTES = 4L * 1024L * 1024L;
 
@@ -600,7 +603,24 @@ public final class MenuCompiler {
 
     private void actionList(SourceDocument document, Map<String, Object> values, String key, String path,
                             List<MenuDiagnostic> diagnostics) {
-        if (values.containsKey(key)) validateStringList(document, values.get(key), path, diagnostics);
+        if (!values.containsKey(key)) return;
+        Object configured = values.get(key);
+        validateStringList(document, configured, path, diagnostics);
+        if (!(configured instanceof List)) return;
+        int index = 0;
+        for (Object entry : (List<?>) configured) {
+            if (entry instanceof String) {
+                Matcher matcher = ACTION_SYNTAX.matcher((String) entry);
+                if (!matcher.matches()) {
+                    error(diagnostics, document, "INVALID_ACTION", path + "[" + index + "]",
+                        "Action invalide; format attendu: [namespace:type] arguments.");
+                } else if ("op".equalsIgnoreCase(matcher.group(1)) || "kgui:op".equalsIgnoreCase(matcher.group(1))) {
+                    error(diagnostics, document, "FORBIDDEN_OP_ACTION", path + "[" + index + "]",
+                        "L'action [op] est interdite; utiliser une action typée ou [console] validée.");
+                }
+            }
+            index++;
+        }
     }
 
     private void stringList(SourceDocument document, String key, List<MenuDiagnostic> diagnostics) {

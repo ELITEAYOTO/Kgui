@@ -1,6 +1,8 @@
 package me.krunsh.kgui.service;
 
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +20,7 @@ import me.krunsh.kgui.Kgui;
 import me.krunsh.kgui.api.ActionHandler;
 import me.krunsh.kgui.api.ActionRegistration;
 import me.krunsh.kgui.api.ContentProvider;
+import me.krunsh.kgui.extension.ExtensionCapability;
 import me.krunsh.kgui.api.InvalidationRequest;
 import me.krunsh.kgui.api.KguiApi;
 import me.krunsh.kgui.api.KguiApiVersion;
@@ -91,8 +94,7 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
 
     @Override
     public MenuPackRegistration registerMenuPack(Plugin owner, String packId, Set<String> menuIds) {
-        Set<String> safeMenus = menuIds == null ? Collections.<String>emptySet()
-                : Collections.unmodifiableSet(new java.util.LinkedHashSet<>(menuIds));
+        Set<String> safeMenus = normalizeMenuIds(menuIds);
         String id = register(menuPacks, owner, packId, safeMenus);
         return new MenuPackHandle(id, owner, menuPacks, this::remove);
     }
@@ -142,6 +144,27 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
         removeOwned(menuPacks, owner);
     }
 
+    public Set<ExtensionCapability> getCapabilities(Plugin owner) {
+        if (owner == null || closed.get() || !owner.isEnabled()) return Collections.emptySet();
+        EnumSet<ExtensionCapability> capabilities = EnumSet.noneOf(ExtensionCapability.class);
+        if (hasOwner(providers, owner)) capabilities.add(ExtensionCapability.PROVIDE_CONTENT);
+        if (hasOwner(actions, owner)) capabilities.add(ExtensionCapability.EXECUTE_ACTION);
+        if (hasOwner(requirements, owner)) capabilities.add(ExtensionCapability.CHECK_REQUIREMENT);
+        if (hasOwner(menuPacks, owner)) capabilities.add(ExtensionCapability.OWN_MENU_PACK);
+        return capabilities.isEmpty() ? Collections.<ExtensionCapability>emptySet()
+            : Collections.unmodifiableSet(EnumSet.copyOf(capabilities));
+    }
+
+    public boolean ownsMenu(Plugin owner, String menuId) {
+        if (owner == null || menuId == null || closed.get() || !owner.isEnabled()) return false;
+        String normalized = menuId.trim().toLowerCase(Locale.ROOT);
+        if (normalized.isEmpty()) return false;
+        for (Extension<Set<String>> extension : menuPacks.values()) {
+            if (extension.owner == owner && extension.owner.isEnabled() && extension.value.contains(normalized)) return true;
+        }
+        return false;
+    }
+
     /** Filet de securite contre les references de classloader oubliees. */
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPluginDisable(PluginDisableEvent event) {
@@ -159,22 +182,23 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
 
     public ContentProvider findProvider(String id) {
         Extension<ContentProvider> extension = providers.get(normalizeLookup(id));
-        return extension == null ? null : extension.value;
+        return activeValue(extension);
     }
 
     public ActionHandler findAction(String id) {
         Extension<ActionHandler> extension = actions.get(normalizeLookup(id));
-        return extension == null ? null : extension.value;
+        return activeValue(extension);
     }
 
     public RequirementHandler findRequirement(String id) {
         Extension<RequirementHandler> extension = requirements.get(normalizeLookup(id));
-        return extension == null ? null : extension.value;
+        return activeValue(extension);
     }
 
     private <T> String register(Map<String, Extension<T>> registry, Plugin owner, String requestedId, T value) {
         if (closed.get()) throw new IllegalStateException("Kgui API is closed");
         if (owner == null || value == null) throw new IllegalArgumentException("owner and extension must not be null");
+        if (!owner.isEnabled()) throw new IllegalStateException("Extension owner is disabled: " + owner.getName());
         String id = normalizeOwnedId(owner, requestedId);
         Extension<T> previous = registry.putIfAbsent(id, new Extension<>(owner, value));
         if (previous != null) throw new IllegalStateException("Extension already registered: " + id);
@@ -192,15 +216,41 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
         }
     }
 
+    private static <T> boolean hasOwner(Map<String, Extension<T>> registry, Plugin owner) {
+        for (Extension<T> extension : registry.values()) if (extension.owner == owner) return true;
+        return false;
+    }
+
+    private static <T> T activeValue(Extension<T> extension) {
+        return extension == null || !extension.owner.isEnabled() ? null : extension.value;
+    }
+
     private static String normalizeOwnedId(Plugin owner, String requestedId) {
         String id = normalizeLookup(requestedId);
+        String ownerNamespace = owner.getName().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.-]", "_");
         if (id.indexOf(':') < 0) {
-            id = owner.getName().toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_.-]", "_") + ":" + id;
+            id = ownerNamespace + ":" + id;
         }
         if (!id.matches("[a-z0-9_.-]+:[a-z0-9_./-]+")) {
             throw new IllegalArgumentException("Invalid namespaced extension id: " + id);
         }
+        if (!id.startsWith(ownerNamespace + ":")) {
+            throw new IllegalArgumentException("Plugin " + owner.getName() + " cannot claim namespace: " + id);
+        }
         return id;
+    }
+
+    private static Set<String> normalizeMenuIds(Set<String> menuIds) {
+        if (menuIds == null || menuIds.isEmpty()) return Collections.emptySet();
+        if (menuIds.size() > 512) throw new IllegalArgumentException("A menu pack is limited to 512 menus");
+        Set<String> normalized = new LinkedHashSet<>();
+        for (String menuId : menuIds) {
+            if (menuId == null) throw new IllegalArgumentException("menuId must not be null");
+            String id = menuId.trim().toLowerCase(Locale.ROOT);
+            if (!id.matches("[a-z0-9_.:/-]+")) throw new IllegalArgumentException("Invalid menu id: " + menuId);
+            normalized.add(id);
+        }
+        return Collections.unmodifiableSet(normalized);
     }
 
     private static String normalizeLookup(String id) {
@@ -232,7 +282,7 @@ public final class KguiApiProvider implements KguiApi, AutoCloseable, Listener {
         @Override public String getId() { return id; }
         @Override public boolean isRegistered() {
             Extension<T> extension = registry.get(id);
-            return active.get() && extension != null && extension.owner == owner;
+            return active.get() && owner.isEnabled() && extension != null && extension.owner == owner;
         }
         @Override public void close() {
             if (active.compareAndSet(true, false)) remover.accept(registry, new Removal(id, owner));
