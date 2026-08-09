@@ -1,9 +1,9 @@
 schema_version: 2
-id: faction_quests
-title: "&6Quêtes &8• &7%page%/%max_page%"
+id: faction_zones
+title: "&6Zones globales &8• &7%page%/%max_page%"
 size: 54
 type: pagination
-refresh: {policy: EVENT}
+refresh: {policy: HYBRID, interval: 200}
 open_requirements:
   api: {type: "kfaction:available", deny_message: "&cLe pack Kfaction est indisponible."}
   faction: {type: "kfaction:has_faction", deny_message: "&cTu dois appartenir à une faction."}
@@ -13,8 +13,8 @@ pagination:
   content_slots: "10-16,19-25,28-34"
   prev_button_slot: 48
   next_button_slot: 50
-  provider: "kfaction:quests"
-  empty_message: "&7Aucune quête active."
+  provider: "kfaction:zones"
+  empty_message: "&7Aucune zone globale configurée."
 items:
   back: {slot: 45, material: ARROW, display_name: "&cRetour", click_actions: ["[open] faction_menu"]}
   previous: {slot: 48, material: ARROW, display_name: "&eRemonter", click_actions: ["[previous_page]"]}

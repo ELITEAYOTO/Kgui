@@ -1,191 +1,34 @@
 schema_version: 2
-# ==============================================================================
-# KGUI - HOME & WARPS FACTION (faction_warps.yml)
-# ==============================================================================
-# Menu pour gerer les teleportations de faction (Home + Warps)
-#
-# OUVERTURE: Via faction_menu.yml ou /f home
-# ==============================================================================
-
-title: "&6【 &5&lHome & Warps &6】"
+id: faction_warps
+title: "&bHome et warps &8• &7%page%/%max_page%"
 size: 54
-type: normal
-
-block_in_combat: true
-cooldown: 2
-update_interval: 20
-
-# ==============================================================================
-# ITEMS
-# ==============================================================================
+type: pagination
+refresh: {policy: EVENT}
+open_requirements:
+  api: {type: "kfaction:available", deny_message: "&cLe pack Kfaction est indisponible."}
+  faction: {type: "kfaction:has_faction", deny_message: "&cTu dois appartenir à une faction."}
+pagination:
+  enabled: true
+  navigation: PAGE
+  content_slots: "10-16,19-25,28-34"
+  prev_button_slot: 48
+  next_button_slot: 50
+  provider: "kfaction:warps"
+  empty_message: "&7Aucun warp de faction."
 items:
-
-  # ============================================================================
-  # BACKGROUNDS - Bordures orange
-  # ============================================================================
-  background:
-    slots: "0,1,2,3,5,6,7,8,9,17,18,26,27,35,36,44,46,47,48,50,51,52,53"
-    material: CLAY_BALL
-    cit: background_2
-    glow: false
-    hide_attributes: true
-    kgui_protected: true
-    display_name: " "
-    
-  # ============================================================================
-  # BACKGROUNDS - Jaune interieur
-  # ============================================================================
-  background2:
-    slots: "10,11,14,15,16,19,20,23,24,25,28,29,30,31,32,33,34,37,38,39,40,41,42,43"
-    material: CLAY_BALL
-    cit: background_1
-    glow: false
-    hide_attributes: true
-    kgui_protected: true
-    display_name: " "
-
-  # ============================================================================
-  # TITRE (slot 4)
-  # ============================================================================
-  title_item:
+  home:
     slot: 4
-    material: CLAY_BALL
-    cit: home_1
-    glow: false
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&5&lTeleportations"
-    lore:
-      - ""
-      - "&7Gere les points de"
-      - "&7teleportation de ta faction."
-      - ""
-      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-
-  # ============================================================================
-  # HOME SECTION
-  # ============================================================================
-  
-  # Aller au home (slot 12)
-  go_home:
-    slot: 12
-    material: ENDER_PEARL
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&3&lAller au Home"
-    lore:
-      - ""
-      - "&7Teleporte-toi au home"
-      - "&7principal de ta faction."
-      - ""
-      - "&b▸ Clic pour te teleporter"
-    
-    click_actions:
-      - "[sound] ENDERMAN_TELEPORT 1.0 1.0"
-      - "[close]"
-      - "[player] f home"
-
-  # Definir le home (slot 13)
-  set_home:
-    slot: 13
     material: BED
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&5&lDefinir le Home"
-    lore:
-      - ""
-      - "&7Definit le home de ta faction"
-      - "&7a ta position actuelle."
-      - ""
-      - "&d▸ Clic pour definir"
-    
-    view_requirements:
-      - "faction_role: COLEADER"
-    
-    click_actions:
-      - "[sound] CLICK 1.0 1.0"
-      - "[close]"
-      - "[player] f sethome"
-      - "[message] &a[FACTION] &aHome defini a ta position!"
-
-  # ============================================================================
-  # WARPS SECTION
-  # ============================================================================
-  
-  # Liste des warps (slot 21)
-  warps_list:
-    slot: 21
-    material: ENDER_CHEST
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&2&lListe des Warps"
-    lore:
-      - ""
-      - "&7Voir tous les warps de"
-      - "&7ta faction."
-      - ""
-      - "&a▸ Clic pour voir"
-    
-    click_actions:
-      - "[sound] CLICK 1.0 1.0"
-      - "[message] &e[FACTION] &eListe des warps disponibles:"
-      - "[close]"
-      - "[player] f warp list"
-
-  # Creer un warp (slot 22)
-  create_warp:
-    slot: 22
-    material: SIGN
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&6&lCreer un Warp"
-    lore:
-      - ""
-      - "&7Cree un nouveau warp a"
-      - "&7ta position actuelle."
-      - ""
-      - "&e▸ Clic pour creer"
-    
-    view_requirements:
-      - "faction_role: COLEADER"
-    
-    click_actions:
-      - "[sound] CLICK 1.0 1.0"
-      - "[close]"
-      - "[message] &e[FACTION] &eTape /f setwarp <nom> pour creer un warp!"
-
-  # ============================================================================
-  # RETOUR & INFO
-  # ============================================================================
-  
-  # Info (slot 49)
-  info_button:
-    slot: 49
-    material: CLAY_BALL
-    cit: gear
-    glow: false
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&e&lInfos"
-    lore:
-      - "&8---------------"
-      - "%player_displayname%"
-      - "&6Argent: &e%vault_eco_balance_formatted%"
-      - "&7Role: &f%kfaction_faction_role%"
-      - "&8---------------"
-
-  # Retour (slot 45)
-  back_button:
-    slot: 45
-    material: ARROW
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&c&l◄ Retour"
-    lore:
-      - ""
-      - "&7Retourner au menu faction"
-    
-    click_actions:
-      - "[sound] CLICK 1.0 0.8"
-      - "[open] faction_menu"
-  
+    display_name: "&aTéléportation au home"
+    click_actions: ["[kfaction:teleport_home]"]
+  set_home:
+    slot: 8
+    material: REDSTONE_TORCH_ON
+    display_name: "&eDéfinir le home ici"
+    click_requirements:
+      permission: {type: "kfaction:capability", permission: sethome, deny_message: "&cTon rôle ne peut pas définir le home."}
+    click_actions: ["[kfaction:set_home]"]
+  back: {slot: 45, material: ARROW, display_name: "&cRetour", click_actions: ["[open] faction_menu"]}
+  previous: {slot: 48, material: ARROW, display_name: "&ePage précédente", click_actions: ["[previous_page]"]}
+  page: {slot: 49, material: PAPER, display_name: "&ePage %page%/%max_page%"}
+  next: {slot: 50, material: ARROW, display_name: "&ePage suivante", click_actions: ["[next_page]"]}
