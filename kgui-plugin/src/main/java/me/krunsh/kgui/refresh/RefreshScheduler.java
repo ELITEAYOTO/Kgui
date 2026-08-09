@@ -53,7 +53,14 @@ public final class RefreshScheduler implements AutoCloseable {
         if (token == null || intervalTicks <= 0) return;
         Periodic value = new Periodic(Math.max(1, intervalTicks));
         periodic.put(token, value);
-        due.add(new Due(token, value, tick + value.interval));
+        // Spread the first deadline across the interval. Hundreds of menus
+        // opened during the same login burst must not refresh on one tick.
+        due.add(new Due(token, value, tick + initialDelay(token, value.interval)));
+    }
+
+    static int initialDelay(SessionToken token, int intervalTicks) {
+        int interval = Math.max(1, intervalTicks);
+        return 1 + Math.floorMod(token == null ? 0 : token.hashCode(), interval);
     }
 
     public void unregister(SessionToken token) {
