@@ -1,8 +1,6 @@
 package me.krunsh.kgui.gui;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +20,15 @@ import me.krunsh.kgui.config.ConfigManager;
 import me.krunsh.kgui.menu.MenuData;
 import me.krunsh.kgui.menu.MenuItem;
 import me.krunsh.kgui.pagination.PaginationManager.PaginationItem;
+import me.krunsh.kgui.render.ClickBinding;
+import me.krunsh.kgui.render.MenuRenderer;
+import me.krunsh.kgui.render.RenderFrame;
+import me.krunsh.kgui.render.RenderedSlot;
+import me.krunsh.kgui.session.CloseReason;
+import me.krunsh.kgui.session.PlayerGuiSession;
+import me.krunsh.kgui.session.SessionRegistry;
+import me.krunsh.kgui.session.SessionToken;
+import me.krunsh.kgui.session.SessionAccessPolicy;
 import me.krunsh.kgui.utils.ColorUtils;
 import me.krunsh.kgui.utils.ItemBuilder;
 
@@ -34,36 +41,29 @@ public class GuiManager {
     private final Kgui plugin;
     
     // Menus ouverts par joueur
-    private final Map<UUID, OpenGui> openGuis = new HashMap<>();
+    private final SessionRegistry sessions = new SessionRegistry();
     
     // Historique des menus (pile pour navigation multi-niveaux avec bouton retour)
-    private final Map<UUID, Deque<String>> menuHistory = new HashMap<>();
+    // Navigation, caches, cooldowns et arguments vivent dans PlayerGuiSession.
     
     // Joueurs en cours de refresh (pour éviter que closeMenu supprime le joueur)
-    private final java.util.Set<UUID> refreshingPlayers = new HashSet<>();
     
     // Cache des placeholders par joueur
-    private final Map<UUID, Map<String, String>> placeholderCache = new HashMap<>();
-    private final Map<UUID, Long> placeholderCacheTime = new HashMap<>();
     
     // Cooldowns: UUID -> (itemKey -> lastClickTime)
-    private final Map<UUID, Map<String, Long>> itemCooldowns = new HashMap<>();
     
     // Args runtime conserves par joueur ET par menu pendant toute la session GUI.
     // Ils doivent rester disponibles lors des refreshs et lors d'un retour arriere.
-    private final Map<UUID, Map<String, Map<String, String>>> runtimeArgs = new HashMap<>();
 
     // Regroupe toutes les demandes de refresh d'un meme tick.
     private final RefreshRequestGate refreshGate = new RefreshRequestGate();
 
     // Un seul changement de page est accepte par joueur et par tick.
-    private final java.util.Set<UUID> navigationLocks = new HashSet<>();
     
     // Auto-refresh task ID
     private int autoRefreshTaskId = -1;
     
     // Flag pour éviter d'ajouter à l'historique (utilisé par [back])
-    private final java.util.Set<UUID> skipHistoryPlayers = new HashSet<>();
 
     public GuiManager(Kgui plugin) {
         this.plugin = plugin;
@@ -73,7 +73,7 @@ public class GuiManager {
      * Ouvre un menu pour un joueur
      */
     public boolean openMenu(Player player, String menuId) {
-        return openMenu(player, menuId, 0);
+        return openMenuInternal(player, menuId, 0, null, false);
     }
 
     /**
@@ -82,7 +82,7 @@ public class GuiManager {
      * Exemple : kgui.getGuiManager().openMenu(player, "kjobs_detail", Map.of("job_id","mineur"))
      */
     public boolean openMenu(Player player, String menuId, Map<String, String> args) {
-        return openMenu(player, menuId, 0, args);
+        return openMenuInternal(player, menuId, 0, args, false);
     }
 
     /**
@@ -90,11 +90,7 @@ public class GuiManager {
      * au contrat Kgui 2 et evite de muter l'etat par une commande joueur.
      */
     public boolean openMenu(Player player, String menuId, int page, Map<String, String> args) {
-        if (args != null && !args.isEmpty()) {
-            runtimeArgs.computeIfAbsent(player.getUniqueId(), ignored -> new HashMap<>())
-                .put(menuId, new HashMap<>(args));
-        }
-        return openMenu(player, menuId, page);
+        return openMenuInternal(player, menuId, page, args, false);
     }
 
     /**
@@ -102,14 +98,22 @@ public class GuiManager {
      * Utilisé par l'action [back] pour éviter une boucle infinie
      */
     public boolean openMenuBack(Player player, String menuId) {
-        skipHistoryPlayers.add(player.getUniqueId());
-        return openMenu(player, menuId, 0);
+        return openMenuInternal(player, menuId, 0, null, true);
+    }
+
+    public boolean openMenuBack(Player player, String menuId, Map<String, String> arguments) {
+        return openMenuInternal(player, menuId, 0, arguments, true);
     }
 
     /**
      * Ouvre un menu pour un joueur à une page spécifique
      */
     public boolean openMenu(Player player, String menuId, int page) {
+        return openMenuInternal(player, menuId, page, null, false);
+    }
+
+    private boolean openMenuInternal(Player player, String menuId, int page,
+                                     Map<String, String> arguments, boolean backNavigation) {
         MenuData menuData = plugin.getMenuManager().getMenu(menuId);
         if (menuData == null) {
             plugin.getMessageManager().send(player, "menu-not-found", "menu", menuId);
@@ -136,6 +140,19 @@ public class GuiManager {
             plugin.getMessageManager().send(player, "not-allowed-world");
             return false;
         }
+
+        PlayerGuiSession previous = sessions.get(player.getUniqueId());
+        PlayerGuiSession session = sessions.create(player.getUniqueId(), menuId, page, null);
+        session.inheritNavigationState(previous);
+        if (previous != null && !previous.getMenuId().equals(menuId) && !backNavigation) {
+            session.getHistory().push(previous.getMenuId());
+        }
+        if (arguments != null && !arguments.isEmpty()) {
+            session.getRuntimeArguments().put(menuId, new HashMap<>(arguments));
+        }
+        refreshGate.clear(player.getUniqueId());
+        if (previous != null) plugin.getAnimationManager().stopAnimation(player);
+        sessions.activate(session);
         
         // Initialiser pagination/scroll AVANT le parsing du titre pour que %page% fonctionne.
         switch (menuData.getMenuType()) {
@@ -163,7 +180,10 @@ public class GuiManager {
             title = title.substring(0, 32);
         }
         
-        KguiInventoryHolder holder = new KguiInventoryHolder(menuId, currentPageForView, player.getUniqueId());
+        session.setPage(currentPageForView);
+        long revision = session.nextRenderRevision();
+        KguiInventoryHolder holder = new KguiInventoryHolder(
+            menuId, currentPageForView, player.getUniqueId(), session.getSessionId(), revision);
         Inventory inventory = Bukkit.createInventory(
             holder,
             menuData.getSize(),
@@ -172,22 +192,14 @@ public class GuiManager {
         holder.setInventory(inventory);
         
         // Enregistrer la GUI AVANT de remplir l'inventaire (pour que getPlayerCurrentMenu fonctionne)
-        OpenGui openGui = new OpenGui(player.getUniqueId(), menuId, currentPageForView, inventory);
-        openGui.setTotalPages(plugin.getPaginationManager().getMaxPage(player, menuId));
-        openGui.setScrollOffset(plugin.getScrollManager().getScrollOffset(player, menuId));
+        session.setInventory(inventory);
+        session.setTotalPages(plugin.getPaginationManager().getMaxPage(player, menuId));
+        session.setScrollOffset(plugin.getScrollManager().getScrollOffset(player, menuId));
         
         // Sauvegarder le menu précédent dans la pile (navigation multi-niveaux)
-        OpenGui previousGui = openGuis.get(player.getUniqueId());
-        if (previousGui != null && !previousGui.getMenuId().equals(menuId)) {
-            if (!skipHistoryPlayers.remove(player.getUniqueId())) {
-                menuHistory.computeIfAbsent(player.getUniqueId(), k -> new ArrayDeque<>()).push(previousGui.getMenuId());
-            }
-        }
-        
-        openGuis.put(player.getUniqueId(), openGui);
-        
-        // Remplir l'inventaire (maintenant getPlayerCurrentMenu fonctionne pour les requirements)
-        fillInventory(player, inventory, menuData, currentPageForView);
+        RenderFrame frame = renderInventory(player, menuData, revision);
+        applyFullFrame(inventory, frame);
+        session.setFrame(frame);
         
         // Ouvrir l'inventaire
         player.openInventory(inventory);
@@ -248,8 +260,9 @@ public class GuiManager {
      * Les items sont triés par priorité (plus haute = affiché en priorité sur le même slot)
      * Supporte les menus paginés avec PaginationItems dynamiques
      */
-    private void fillInventory(Player player, Inventory inventory, MenuData menuData, int page) {
+    private RenderFrame renderInventory(Player player, MenuData menuData, long revision) {
         // Map pour tracker la priorité des items déjà placés sur chaque slot
+        MenuRenderer renderer = new MenuRenderer(menuData.getSize());
         Map<Integer, Integer> slotPriorities = new HashMap<>();
         
         // Trier les items par priorité croissante (les plus hauts seront traités en dernier et écraseront)
@@ -271,11 +284,11 @@ public class GuiManager {
             
             // Placer l'item dans les slots (en respectant les priorités)
             for (int slot : menuItem.getSlots()) {
-                if (slot >= 0 && slot < inventory.getSize()) {
+                if (slot >= 0 && slot < menuData.getSize()) {
                     int existingPriority = slotPriorities.getOrDefault(slot, Integer.MIN_VALUE);
                     // Placer si priorité >= à l'existante
                     if (menuItem.getPriority() >= existingPriority) {
-                        inventory.setItem(slot, item);
+                        renderer.place(slot, item, ClickBinding.forMenuItem(menuItem), menuItem.getPriority());
                         slotPriorities.put(slot, menuItem.getPriority());
                     }
                 }
@@ -287,7 +300,7 @@ public class GuiManager {
         List<Integer> contentSlots = menuData.getContentSlots();
         if (!contentSlots.isEmpty()) {
             if (menuData.getMenuType() == me.krunsh.kgui.menu.MenuType.SCROLL) {
-                renderScrollDynamicContent(player, inventory, menuData, slotPriorities);
+                renderScrollDynamicContent(player, renderer, menuData, slotPriorities);
             } else {
                 Map<Integer, me.krunsh.kgui.pagination.PaginationManager.PaginationItem> paginatedItems = 
                     plugin.getPaginationManager().mapItemsToSlots(player, menuData);
@@ -296,11 +309,11 @@ public class GuiManager {
                     int slot = entry.getKey();
                     me.krunsh.kgui.pagination.PaginationManager.PaginationItem pagItem = entry.getValue();
                     
-                    if (slot >= 0 && slot < inventory.getSize()) {
+                    if (slot >= 0 && slot < menuData.getSize()) {
                         // Construire l'item depuis le PaginationItem
                         ItemStack item = buildPaginationItem(player, pagItem, menuData.getId());
                         if (item != null) {
-                            inventory.setItem(slot, item);
+                            renderer.place(slot, item, dynamicBinding(pagItem), Integer.MAX_VALUE);
                             // Les items paginés ont une priorité maximale
                             slotPriorities.put(slot, Integer.MAX_VALUE);
                         }
@@ -308,6 +321,7 @@ public class GuiManager {
                 }
             }
         }
+        return renderer.finish(revision);
     }
 
     /**
@@ -325,15 +339,17 @@ public class GuiManager {
         // Fusionner les args YAML statiques avec les args runtime passés via openMenu(player, id, args)
         Map<String, String> yamlArgs = menuData.getProviderArgs();
         Map<String, String> mergedArgs = new java.util.HashMap<>(yamlArgs != null ? yamlArgs : java.util.Collections.emptyMap());
-        Map<String, Map<String, String>> playerRuntimeArgs = runtimeArgs.get(player.getUniqueId());
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        Map<String, Map<String, String>> playerRuntimeArgs = session == null
+            ? null : session.getRuntimeArguments();
         Map<String, String> runtime = playerRuntimeArgs != null ? playerRuntimeArgs.get(menuId) : null;
         if (runtime != null) mergedArgs.putAll(runtime);
 
         List<DynamicItem> dynamicItems = plugin.getContentProviderManager()
             .getContent(providerId, player, mergedArgs);
 
-        for (DynamicItem dynItem : dynamicItems) {
-            paginationItems.add(convertToPaginationItem(dynItem));
+        for (int index = 0; index < dynamicItems.size(); index++) {
+            paginationItems.add(convertToPaginationItem(dynamicItems.get(index), providerId, index));
         }
 
         if (plugin.getConfigManager().isDebug()) {
@@ -418,7 +434,7 @@ public class GuiManager {
     /**
      * Rendu des items dynamiques en mode scroll (offset ligne par ligne).
      */
-    private void renderScrollDynamicContent(Player player, Inventory inventory, MenuData menuData, Map<Integer, Integer> slotPriorities) {
+    private void renderScrollDynamicContent(Player player, MenuRenderer renderer, MenuData menuData, Map<Integer, Integer> slotPriorities) {
         me.krunsh.kgui.pagination.PaginationManager.PageData pageData = plugin.getPaginationManager().getPageData(player, menuData.getId());
         if (pageData == null || pageData.getItems().isEmpty()) {
             return;
@@ -427,7 +443,7 @@ public class GuiManager {
         List<Integer> contentSlots = menuData.getContentSlots();
         for (int i = 0; i < contentSlots.size(); i++) {
             int slot = contentSlots.get(i);
-            if (slot < 0 || slot >= inventory.getSize()) {
+            if (slot < 0 || slot >= menuData.getSize()) {
                 continue;
             }
 
@@ -439,7 +455,7 @@ public class GuiManager {
             PaginationItem pagItem = pageData.getItems().get(contentIndex);
             ItemStack item = buildPaginationItem(player, pagItem, menuData.getId());
             if (item != null) {
-                inventory.setItem(slot, item);
+                renderer.place(slot, item, dynamicBinding(pagItem), Integer.MAX_VALUE);
                 slotPriorities.put(slot, Integer.MAX_VALUE);
             }
         }
@@ -483,7 +499,7 @@ public class GuiManager {
      * Convertit un DynamicItem (API) en PaginationItem (interne)
      * Utilisé pour les menus utilisant le Content Provider API
      */
-    private PaginationItem convertToPaginationItem(DynamicItem dynItem) {
+    private PaginationItem convertToPaginationItem(DynamicItem dynItem, String providerId, int index) {
         // Extraire les propriétés depuis le DynamicItem
         String material = dynItem.getMaterial() != null ? dynItem.getMaterial() : "PAPER";
         short data = dynItem.getData();
@@ -499,8 +515,13 @@ public class GuiManager {
         List<String> clickActions = dynItem.getClickActions() != null ? 
             dynItem.getClickActions() : new ArrayList<>();
         
+        String stableId = placeholders.get("item_id");
+        if (stableId == null || stableId.trim().isEmpty()) stableId = placeholders.get("id");
+        if (stableId == null || stableId.trim().isEmpty()) stableId = String.valueOf(index);
+
         return new PaginationItem(material, data, name, lore, glow, placeholders, clickActions,
-            dynItem.getSkullOwner(), dynItem.getHeadDatabaseId());
+            dynItem.getLeftClickActions(), dynItem.getRightClickActions(), dynItem.getShiftClickActions(),
+            providerId + ":" + stableId, dynItem.getSkullOwner(), dynItem.getHeadDatabaseId());
     }
     
     /**
@@ -549,21 +570,10 @@ public class GuiManager {
             
             ItemStack item = builder.build();
             
-            // Ajouter le tag NBT de protection + stocker les click_actions
+            // Ajouter uniquement le marqueur NBT anti-vol.
             item = tagAsGuiItem(item, menuId);
             
-            // Stocker les click_actions dans NBT pour récupération lors du clic
-            if (pagItem.getClickActions() != null && !pagItem.getClickActions().isEmpty()) {
-                NBTItem nbtItem = new NBTItem(item);
-                // Sérialiser les actions en JSON
-                StringBuilder actions = new StringBuilder();
-                for (int i = 0; i < pagItem.getClickActions().size(); i++) {
-                    if (i > 0) actions.append("||");
-                    actions.append(pagItem.getClickActions().get(i));
-                }
-                nbtItem.setString("kgui_pagination_actions", actions.toString());
-                item = nbtItem.getItem();
-            }
+            // Les actions exécutables restent exclusivement dans RenderedSlot.
             
             return item;
         } catch (Exception e) {
@@ -666,9 +676,12 @@ public class GuiManager {
      */
     public boolean isGuiItem(ItemStack item) {
         if (item == null || item.getType() == Material.AIR) return false;
-        
-        NBTItem nbtItem = new NBTItem(item);
-        return nbtItem.hasKey(plugin.getConfigManager().getNbtTag());
+        try {
+            NBTItem nbtItem = new NBTItem(item);
+            return nbtItem.hasKey(plugin.getConfigManager().getNbtTag());
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     /**
@@ -726,30 +739,33 @@ public class GuiManager {
      * TTL configurable dans config.yml: placeholder-cache-ttl (ms)
      */
     private String parseWithCache(Player player, String text) {
-        UUID uuid = player.getUniqueId();
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        if (session == null) {
+            return plugin.getHookManager().getPlaceholderAPIHook().setPlaceholders(player, text);
+        }
         long now = System.currentTimeMillis();
         long cacheTTL = plugin.getConfigManager().getConfig().getLong("placeholder-cache-ttl", 500L);
         
         // Vérifier si le cache est encore valide
-        Long lastCacheTime = placeholderCacheTime.get(uuid);
-        if (lastCacheTime != null && (now - lastCacheTime) < cacheTTL) {
+        long lastCacheTime = session.getPlaceholderCacheTime();
+        if (lastCacheTime > 0L && (now - lastCacheTime) < cacheTTL) {
             // Utiliser le cache
-            Map<String, String> playerCache = placeholderCache.get(uuid);
+            Map<String, String> playerCache = session.getPlaceholderCache();
             if (playerCache != null && playerCache.containsKey(text)) {
                 return playerCache.get(text);
             }
         } else {
             // Cache expiré, le nettoyer
-            placeholderCache.remove(uuid);
-            placeholderCacheTime.remove(uuid);
+            session.getPlaceholderCache().clear();
+            session.setPlaceholderCacheTime(0L);
         }
         
         // Parser via PlaceholderAPI
         String result = plugin.getHookManager().getPlaceholderAPIHook().setPlaceholders(player, text);
         
         // Stocker dans le cache
-        placeholderCache.computeIfAbsent(uuid, k -> new HashMap<>()).put(text, result);
-        placeholderCacheTime.put(uuid, now);
+        session.getPlaceholderCache().put(text, result);
+        session.setPlaceholderCacheTime(now);
         
         return result;
     }
@@ -760,17 +776,22 @@ public class GuiManager {
      */
     public void invalidatePlaceholderCache(Player player) {
         if (player != null) {
-            placeholderCache.remove(player.getUniqueId());
-            placeholderCacheTime.remove(player.getUniqueId());
+            PlayerGuiSession session = sessions.get(player.getUniqueId());
+            if (session != null) {
+                session.getPlaceholderCache().clear();
+                session.setPlaceholderCacheTime(0L);
+            }
         }
     }
-    
+
     /**
      * Invalide tous les caches de placeholders
      */
     public void invalidateAllPlaceholderCaches() {
-        placeholderCache.clear();
-        placeholderCacheTime.clear();
+        for (PlayerGuiSession session : sessions.snapshot()) {
+            session.getPlaceholderCache().clear();
+            session.setPlaceholderCacheTime(0L);
+        }
     }
 
     /**
@@ -794,33 +815,49 @@ public class GuiManager {
      * Ferme le menu d'un joueur
      */
     public void closeMenu(Player player) {
-        closeMenu(player, true);
+        closeMenu(player, true, CloseReason.PLAYER_CLOSE);
     }
 
     /**
      * Ferme le menu d'un joueur
      */
     public void closeMenu(Player player, boolean executeActions) {
-        // Ignorer si le joueur est en train de refresh (changement de page)
-        if (refreshingPlayers.contains(player.getUniqueId())) {
-            return;
+        closeMenu(player, executeActions, CloseReason.PLAYER_CLOSE);
+    }
+
+    public boolean closeMenu(Player player, boolean executeActions, CloseReason reason) {
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        return session != null && closeSession(player, session.getSessionId(), executeActions, reason);
+    }
+
+    public boolean closeSession(Player player, long sessionId, boolean executeActions, CloseReason reason) {
+        PlayerGuiSession current = sessions.get(player.getUniqueId());
+        if (current == null || current.getSessionId() != sessionId) return false;
+
+        MenuData menuData = plugin.getMenuManager().getMenu(current.getMenuId());
+        PlayerGuiSession closed = sessions.close(player.getUniqueId(), sessionId, reason);
+        if (closed == null) return false;
+
+        cleanupPlayerState(player, reason);
+        if (executeActions && menuData != null) {
+            plugin.getActionManager().executeActions(player, menuData.getCloseActions());
         }
-        
-        OpenGui openGui = openGuis.remove(player.getUniqueId());
-        if (openGui != null && executeActions) {
-            MenuData menuData = plugin.getMenuManager().getMenu(openGui.getMenuId());
-            if (menuData != null) {
-                plugin.getActionManager().executeActions(player, menuData.getCloseActions());
-            }
+        return true;
+    }
+
+    private void cleanupPlayerState(Player player, CloseReason reason) {
+        UUID uuid = player.getUniqueId();
+        refreshGate.clear(uuid);
+        plugin.getPaginationManager().cleanupPlayer(uuid);
+        plugin.getScrollManager().cleanupPlayer(uuid);
+        plugin.getAnimationManager().stopAnimation(player);
+        plugin.getActionManager().cancelPending(uuid);
+        plugin.getInputManager().discard(player);
+        plugin.getChatInputListener().discard(uuid);
+        if (reason == CloseReason.QUIT || reason == CloseReason.KICK
+                || reason == CloseReason.RELOAD || reason == CloseReason.DISABLE) {
+            plugin.getPlayerDataManager().clearData(player);
         }
-        
-        // Nettoyer le cache de placeholders
-        invalidatePlaceholderCache(player);
-        runtimeArgs.remove(player.getUniqueId());
-        refreshGate.clear(player.getUniqueId());
-        navigationLocks.remove(player.getUniqueId());
-        
-        // Nettoyer l'inventaire du joueur des items GUI
         cleanPlayerInventory(player);
     }
 
@@ -828,14 +865,23 @@ public class GuiManager {
      * Ferme tous les menus
      */
     public void closeAllMenus() {
-        for (UUID uuid : new HashSet<>(openGuis.keySet())) {
-            Player player = Bukkit.getPlayer(uuid);
+        closeAllMenus(CloseReason.RELOAD);
+    }
+
+    public void closeAllMenus(CloseReason reason) {
+        for (PlayerGuiSession session : sessions.snapshot()) {
+            Player player = Bukkit.getPlayer(session.getPlayerUuid());
             if (player != null && player.isOnline()) {
+                closeSession(player, session.getSessionId(), false, reason);
                 player.closeInventory();
-                closeMenu(player, false);
+            } else {
+                sessions.close(session.getPlayerUuid(), session.getSessionId(), reason);
+                refreshGate.clear(session.getPlayerUuid());
+                plugin.getPaginationManager().cleanupPlayer(session.getPlayerUuid());
+                plugin.getScrollManager().cleanupPlayer(session.getPlayerUuid());
             }
         }
-        openGuis.clear();
+        sessions.closeAll(reason);
     }
 
     /**
@@ -874,22 +920,28 @@ public class GuiManager {
 
     /** Regroupe les demandes du meme tick avant d'effectuer le refresh. */
     public void refreshMenu(Player player) {
-        OpenGui openGui = openGuis.get(player.getUniqueId());
-        if (openGui == null) return;
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        if (session == null) return;
 
         final UUID playerUuid = player.getUniqueId();
-        final String expectedMenuId = openGui.getMenuId();
-        if (!refreshGate.trySchedule(playerUuid, expectedMenuId)) {
+        final String expectedMenuId = session.getMenuId();
+        final SessionToken token = session.getToken();
+        if (!refreshGate.trySchedule(playerUuid, expectedMenuId, token.getSessionId())) {
             return;
         }
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        final org.bukkit.scheduler.BukkitTask[] taskRef = new org.bukkit.scheduler.BukkitTask[1];
+        org.bukkit.scheduler.BukkitTask task = Bukkit.getScheduler().runTask(plugin, () -> {
             try {
-                performRefresh(player, expectedMenuId);
+                performRefresh(player, token);
             } finally {
-                refreshGate.complete(playerUuid, expectedMenuId);
+                refreshGate.complete(playerUuid, expectedMenuId, token.getSessionId());
+                PlayerGuiSession active = sessions.resolve(token);
+                if (active != null) active.untrackTask(taskRef[0]);
             }
         });
+        taskRef[0] = task;
+        if (!session.trackTask(task)) task.cancel();
     }
 
     /**
@@ -898,22 +950,33 @@ public class GuiManager {
      * dans une boucle de polling supplementaire.
      */
     public void refreshMatchingMenus(String menuId, String providerId) {
-        for (Map.Entry<UUID, OpenGui> entry : new HashMap<>(openGuis).entrySet()) {
-            OpenGui openGui = entry.getValue();
-            if (menuId != null && !menuId.equalsIgnoreCase(openGui.getMenuId())) {
+        for (PlayerGuiSession session : sessions.snapshot()) {
+            if (menuId != null && !menuId.equalsIgnoreCase(session.getMenuId())) {
                 continue;
             }
             if (providerId != null) {
-                MenuData menu = plugin.getMenuManager().getMenu(openGui.getMenuId());
+                MenuData menu = plugin.getMenuManager().getMenu(session.getMenuId());
                 if (menu == null || !providerId.equalsIgnoreCase(menu.getContentProvider())) {
                     continue;
                 }
             }
-            Player player = Bukkit.getPlayer(entry.getKey());
+            Player player = Bukkit.getPlayer(session.getPlayerUuid());
             if (player != null && player.isOnline()) {
                 refreshMenu(player);
             }
         }
+    }
+
+    private void applyFullFrame(Inventory inventory, RenderFrame frame) {
+        for (int slot = 0; slot < frame.size(); slot++) {
+            RenderedSlot rendered = frame.get(slot);
+            inventory.setItem(slot, rendered == null ? null : rendered.getItem());
+        }
+    }
+
+    private ClickBinding dynamicBinding(PaginationItem item) {
+        return ClickBinding.forDynamicItem(item.getBindingId(), item.getClickActions(),
+            item.getLeftClickActions(), item.getRightClickActions(), item.getShiftClickActions());
     }
 
     /**
@@ -921,11 +984,19 @@ public class GuiManager {
      * pendant le meme tick. Il ne bloque jamais un auto-refresh deja planifie.
      */
     public boolean tryLockNavigation(Player player) {
-        final UUID uuid = player.getUniqueId();
-        if (!navigationLocks.add(uuid)) {
-            return false;
-        }
-        Bukkit.getScheduler().runTask(plugin, () -> navigationLocks.remove(uuid));
+        final PlayerGuiSession session = sessions.get(player.getUniqueId());
+        if (session == null || !session.tryLockNavigation()) return false;
+        final SessionToken token = session.getToken();
+        final org.bukkit.scheduler.BukkitTask[] taskRef = new org.bukkit.scheduler.BukkitTask[1];
+        org.bukkit.scheduler.BukkitTask task = Bukkit.getScheduler().runTask(plugin, () -> {
+            PlayerGuiSession active = sessions.resolve(token);
+            if (active != null) {
+                active.unlockNavigation();
+                active.untrackTask(taskRef[0]);
+            }
+        });
+        taskRef[0] = task;
+        if (!session.trackTask(task)) task.cancel();
         return true;
     }
 
@@ -933,63 +1004,66 @@ public class GuiManager {
      * Recharge les donnees puis modifie seulement les slots qui ont change. Une
      * reouverture n'est faite que si le titre ou la taille doivent reellement changer.
      */
-    private void performRefresh(Player player, String expectedMenuId) {
-        OpenGui openGui = openGuis.get(player.getUniqueId());
-        if (openGui == null || !openGui.getMenuId().equals(expectedMenuId)) return;
+    private void performRefresh(Player player, SessionToken token) {
+        PlayerGuiSession session = sessions.resolve(token);
+        if (session == null) return;
 
-        MenuData menuData = plugin.getMenuManager().getMenu(openGui.getMenuId());
+        MenuData menuData = plugin.getMenuManager().getMenu(session.getMenuId());
         if (menuData == null) return;
 
-        Inventory currentInventory = openGui.getInventory();
+        Inventory currentInventory = session.getInventory();
         if (!player.isOnline() || player.getOpenInventory() == null
                 || player.getOpenInventory().getTopInventory() != currentInventory) {
             return;
         }
 
-        placeholderCache.remove(player.getUniqueId());
+        session.getPlaceholderCache().clear();
+        session.setPlaceholderCacheTime(0L);
         refreshDynamicContent(player, menuData);
 
-        int currentPage = plugin.getPaginationManager().getCurrentPage(player, openGui.getMenuId());
-        openGui.setPage(currentPage);
-        openGui.setTotalPages(plugin.getPaginationManager().getMaxPage(player, openGui.getMenuId()));
-        openGui.setScrollOffset(plugin.getScrollManager().getScrollOffset(player, openGui.getMenuId()));
+        int currentPage = plugin.getPaginationManager().getCurrentPage(player, session.getMenuId());
+        session.setPage(currentPage);
+        session.setTotalPages(plugin.getPaginationManager().getMaxPage(player, session.getMenuId()));
+        session.setScrollOffset(plugin.getScrollManager().getScrollOffset(player, session.getMenuId()));
 
-        String title = ColorUtils.colorize(parsePlaceholders(player, menuData.getTitle(), openGui.getMenuId()));
+        String title = ColorUtils.colorize(parsePlaceholders(player, menuData.getTitle(), session.getMenuId()));
         if (title.length() > 32) {
             title = title.substring(0, 32);
         }
 
-        KguiInventoryHolder nextHolder = new KguiInventoryHolder(
-            openGui.getMenuId(), currentPage, player.getUniqueId());
-        Inventory nextInventory = Bukkit.createInventory(nextHolder, menuData.getSize(), title);
-        nextHolder.setInventory(nextInventory);
-        fillInventory(player, nextInventory, menuData, currentPage);
+        long revision = session.nextRenderRevision();
+        RenderFrame nextFrame = renderInventory(player, menuData, revision);
 
         String currentTitle = player.getOpenInventory().getTitle();
-        boolean mustReopen = currentInventory.getSize() != nextInventory.getSize()
+        boolean mustReopen = currentInventory.getSize() != nextFrame.size()
             || !title.equals(currentTitle);
 
         if (mustReopen) {
-            refreshingPlayers.add(player.getUniqueId());
-            try {
-                openGui.setInventory(nextInventory);
-                player.openInventory(nextInventory);
-            } finally {
-                refreshingPlayers.remove(player.getUniqueId());
-            }
+            KguiInventoryHolder nextHolder = new KguiInventoryHolder(
+                session.getMenuId(), currentPage, player.getUniqueId(), session.getSessionId(), revision);
+            Inventory nextInventory = Bukkit.createInventory(nextHolder, nextFrame.size(), title);
+            nextHolder.setInventory(nextInventory);
+            applyFullFrame(nextInventory, nextFrame);
+            session.setInventory(nextInventory);
+            session.setFrame(nextFrame);
+            player.openInventory(nextInventory);
         } else {
-            ItemStack[] currentContents = currentInventory.getContents();
-            ItemStack[] nextContents = nextInventory.getContents();
-            for (int slot : SlotDiff.changedSlots(currentContents, nextContents)) {
-                currentInventory.setItem(slot, nextContents[slot]);
+            RenderFrame currentFrame = session.getFrame();
+            RenderedSlot[] currentSlots = currentFrame == null
+                ? new RenderedSlot[nextFrame.size()] : currentFrame.getSlots();
+            for (int slot : SlotDiff.changedSlots(currentSlots, nextFrame.getSlots())) {
+                RenderedSlot rendered = nextFrame.get(slot);
+                currentInventory.setItem(slot, rendered == null ? null : rendered.getItem());
             }
 
             KguiInventoryHolder currentHolder = KguiInventoryHolder.getHolder(currentInventory);
             if (currentHolder != null) {
                 currentHolder.setPage(currentPage);
+                currentHolder.setRenderRevision(revision);
             }
+            session.setFrame(nextFrame);
         }
-        openGui.setLastRefreshTime(System.currentTimeMillis());
+        session.setLastRefreshTime(System.currentTimeMillis());
     }
 
     /** Recharge un provider sans perdre la page ou l'offset courants. */
@@ -1019,26 +1093,79 @@ public class GuiManager {
      * Vérifie si un joueur a un menu ouvert
      */
     public boolean hasOpenMenu(Player player) {
-        return openGuis.containsKey(player.getUniqueId());
+        return sessions.get(player.getUniqueId()) != null;
+    }
+
+    public SessionToken captureSession(Player player) {
+        PlayerGuiSession session = player == null ? null : sessions.get(player.getUniqueId());
+        return session == null ? null : session.getToken();
+    }
+
+    public boolean isSessionActive(SessionToken token) {
+        return sessions.isActive(token);
+    }
+
+    public boolean trackSessionTask(SessionToken token, org.bukkit.scheduler.BukkitTask task) {
+        PlayerGuiSession session = sessions.resolve(token);
+        return session != null && session.trackTask(task);
+    }
+
+    public void untrackSessionTask(SessionToken token, org.bukkit.scheduler.BukkitTask task) {
+        PlayerGuiSession session = sessions.resolve(token);
+        if (session != null) session.untrackTask(task);
+    }
+
+    public PlayerGuiSession resolveSession(Player player, Inventory inventory) {
+        if (player == null || inventory == null) return null;
+        KguiInventoryHolder holder = KguiInventoryHolder.getHolder(inventory);
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        if (holder == null || !SessionAccessPolicy.allows(
+                player.getUniqueId(), holder.getPlayerUuid(), holder.getSessionId(),
+                holder.getRenderRevision(), session, session != null && session.getInventory() == inventory)) {
+            return null;
+        }
+        RenderFrame frame = session.getFrame();
+        return frame != null && frame.getRevision() == holder.getRenderRevision() ? session : null;
+    }
+
+    public RenderedSlot resolveClickedSlot(Player player, Inventory inventory, int rawSlot, ItemStack clicked) {
+        PlayerGuiSession session = resolveSession(player, inventory);
+        if (session == null || rawSlot < 0 || rawSlot >= inventory.getSize()) return null;
+        RenderedSlot rendered = session.getFrame().get(rawSlot);
+        return rendered != null && rendered.matches(clicked) ? rendered : null;
+    }
+
+    public int getActiveSessionCount() {
+        return sessions.size();
     }
 
     /**
      * Obtient la GUI ouverte d'un joueur
      */
-    public OpenGui getOpenGui(Player player) {
-        return openGuis.get(player.getUniqueId());
+    public PlayerGuiSession getOpenGui(Player player) {
+        return sessions.get(player.getUniqueId());
     }
 
     /**
      * Met à jour un slot spécifique via ProtocolLib (si disponible)
      */
     public void updateSlot(Player player, int slot, ItemStack item) {
-        OpenGui openGui = openGuis.get(player.getUniqueId());
-        if (openGui == null) return;
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        if (session == null || slot < 0 || slot >= session.getInventory().getSize()) return;
         
         // Mettre à jour l'item
-        item = tagAsGuiItem(item, openGui.getMenuId());
-        openGui.getInventory().setItem(slot, item);
+        item = tagAsGuiItem(item, session.getMenuId());
+        session.getInventory().setItem(slot, item);
+        RenderFrame oldFrame = session.getFrame();
+        if (oldFrame != null) {
+            RenderedSlot[] slots = oldFrame.getSlots();
+            ClickBinding binding = slots[slot] == null ? null : slots[slot].getBinding();
+            slots[slot] = new RenderedSlot(slot, item, binding);
+            long revision = session.nextRenderRevision();
+            session.setFrame(new RenderFrame(revision, slots));
+            KguiInventoryHolder holder = KguiInventoryHolder.getHolder(session.getInventory());
+            if (holder != null) holder.setRenderRevision(revision);
+        }
         
         // Utiliser ProtocolLib si disponible pour un update plus propre
         if (plugin.getConfigManager().isUseProtocolLib() && plugin.getHookManager().isProtocolLibEnabled()) {
@@ -1052,8 +1179,15 @@ public class GuiManager {
      * Obtient le menu actuellement ouvert par un joueur
      */
     public String getPlayerCurrentMenu(Player player) {
-        OpenGui openGui = openGuis.get(player.getUniqueId());
-        return openGui != null ? openGui.getMenuId() : null;
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        return session != null ? session.getMenuId() : null;
+    }
+
+    public Map<String, String> getRuntimeArguments(Player player, String menuId) {
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        if (session == null) return java.util.Collections.emptyMap();
+        Map<String, String> arguments = session.getRuntimeArguments().get(menuId);
+        return arguments == null ? java.util.Collections.emptyMap() : new HashMap<>(arguments);
     }
 
     /**
@@ -1061,7 +1195,8 @@ public class GuiManager {
      * Supporte la navigation multi-niveaux: faction_menu → logs → logs_economy → [back] → logs → [back] → faction_menu
      */
     public String getPlayerPreviousMenu(Player player) {
-        Deque<String> history = menuHistory.get(player.getUniqueId());
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        java.util.Deque<String> history = session == null ? null : session.getHistory();
         if (history == null || history.isEmpty()) return null;
         return history.poll();
     }
@@ -1070,7 +1205,8 @@ public class GuiManager {
      * Nettoie l'historique des menus d'un joueur
      */
     public void cleanupPlayerHistory(UUID uuid) {
-        menuHistory.remove(uuid);
+        PlayerGuiSession session = sessions.get(uuid);
+        if (session != null) session.getHistory().clear();
     }
     
     // === COOLDOWN SYSTEM ===
@@ -1087,7 +1223,8 @@ public class GuiManager {
         if (cooldownMs <= 0) return false;
         
         String key = menuId + ":" + itemId;
-        Map<String, Long> playerCooldowns = itemCooldowns.get(player.getUniqueId());
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        Map<String, Long> playerCooldowns = session == null ? null : session.getCooldowns();
         if (playerCooldowns == null) return false;
         
         Long lastClick = playerCooldowns.get(key);
@@ -1103,7 +1240,8 @@ public class GuiManager {
         if (cooldownMs <= 0) return 0;
         
         String key = menuId + ":" + itemId;
-        Map<String, Long> playerCooldowns = itemCooldowns.get(player.getUniqueId());
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        Map<String, Long> playerCooldowns = session == null ? null : session.getCooldowns();
         if (playerCooldowns == null) return 0;
         
         Long lastClick = playerCooldowns.get(key);
@@ -1118,15 +1256,16 @@ public class GuiManager {
      */
     public void setItemCooldown(Player player, String menuId, String itemId) {
         String key = menuId + ":" + itemId;
-        itemCooldowns.computeIfAbsent(player.getUniqueId(), k -> new HashMap<>())
-                     .put(key, System.currentTimeMillis());
+        PlayerGuiSession session = sessions.get(player.getUniqueId());
+        if (session != null) session.getCooldowns().put(key, System.currentTimeMillis());
     }
     
     /**
      * Nettoie les cooldowns d'un joueur
      */
     public void cleanupCooldowns(UUID uuid) {
-        itemCooldowns.remove(uuid);
+        PlayerGuiSession session = sessions.get(uuid);
+        if (session != null) session.getCooldowns().clear();
     }
     
     // === AUTO-REFRESH SYSTEM ===
@@ -1142,17 +1281,16 @@ public class GuiManager {
         int checkIntervalTicks = 20;
         
         autoRefreshTaskId = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            for (Map.Entry<UUID, OpenGui> entry : new HashMap<>(openGuis).entrySet()) {
-                Player player = Bukkit.getPlayer(entry.getKey());
+            for (PlayerGuiSession session : sessions.snapshot()) {
+                Player player = Bukkit.getPlayer(session.getPlayerUuid());
                 if (player == null || !player.isOnline()) continue;
                 
-                OpenGui openGui = entry.getValue();
-                MenuData menuData = plugin.getMenuManager().getMenu(openGui.getMenuId());
+                MenuData menuData = plugin.getMenuManager().getMenu(session.getMenuId());
                 if (menuData == null || menuData.getUpdateInterval() <= 0) continue;
                 
                 // Vérifier si c'est le moment de refresh
                 long now = System.currentTimeMillis();
-                long lastRefresh = openGui.getLastRefreshTime();
+                long lastRefresh = session.getLastRefreshTime();
                 long refreshIntervalMs = menuData.getUpdateInterval() * 50L; // ticks -> ms
                 
                 if (now - lastRefresh >= refreshIntervalMs) {

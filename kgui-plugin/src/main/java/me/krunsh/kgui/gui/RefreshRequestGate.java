@@ -10,24 +10,42 @@ import java.util.UUID;
  */
 public final class RefreshRequestGate {
 
-    private final Map<UUID, String> pendingMenus = new HashMap<>();
+    private final Map<UUID, Request> pendingMenus = new HashMap<>();
 
     public boolean trySchedule(UUID playerUuid, String menuId) {
+        return trySchedule(playerUuid, menuId, 0L);
+    }
+
+    public boolean trySchedule(UUID playerUuid, String menuId, long sessionId) {
         if (pendingMenus.containsKey(playerUuid)) {
             return false;
         }
-        pendingMenus.put(playerUuid, menuId);
+        pendingMenus.put(playerUuid, new Request(menuId, sessionId));
         return true;
     }
 
     public void complete(UUID playerUuid, String menuId) {
-        String pendingMenu = pendingMenus.get(playerUuid);
-        if (menuId.equals(pendingMenu)) {
+        complete(playerUuid, menuId, 0L);
+    }
+
+    public void complete(UUID playerUuid, String menuId, long sessionId) {
+        Request pending = pendingMenus.get(playerUuid);
+        if (pending != null && pending.sessionId == sessionId && menuId.equals(pending.menuId)) {
             pendingMenus.remove(playerUuid);
         }
     }
 
     public void clear(UUID playerUuid) {
         pendingMenus.remove(playerUuid);
+    }
+
+    private static final class Request {
+        private final String menuId;
+        private final long sessionId;
+
+        private Request(String menuId, long sessionId) {
+            this.menuId = menuId;
+            this.sessionId = sessionId;
+        }
     }
 }

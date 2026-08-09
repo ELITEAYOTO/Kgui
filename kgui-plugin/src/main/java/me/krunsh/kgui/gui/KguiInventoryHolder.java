@@ -14,12 +14,16 @@ public class KguiInventoryHolder implements InventoryHolder {
     private final String menuId;
     private int page;
     private final UUID playerUuid;
+    private final long sessionId;
+    private long renderRevision;
     private Inventory inventory;
 
-    public KguiInventoryHolder(String menuId, int page, UUID playerUuid) {
+    public KguiInventoryHolder(String menuId, int page, UUID playerUuid, long sessionId, long renderRevision) {
         this.menuId = menuId;
         this.page = page;
         this.playerUuid = playerUuid;
+        this.sessionId = sessionId;
+        this.renderRevision = renderRevision;
     }
 
     @Override
@@ -45,6 +49,18 @@ public class KguiInventoryHolder implements InventoryHolder {
 
     public UUID getPlayerUuid() {
         return playerUuid;
+    }
+
+    public long getSessionId() {
+        return sessionId;
+    }
+
+    public long getRenderRevision() {
+        return renderRevision;
+    }
+
+    public void setRenderRevision(long renderRevision) {
+        this.renderRevision = renderRevision;
     }
 
     /**

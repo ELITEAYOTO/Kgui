@@ -27,6 +27,7 @@ import me.krunsh.kgui.pagination.PaginationManager;
 import me.krunsh.kgui.pagination.ScrollManager;
 import me.krunsh.kgui.requirements.RequirementManager;
 import me.krunsh.kgui.service.KguiApiProvider;
+import me.krunsh.kgui.session.CloseReason;
 
 /**
  * Kgui - Moteur de GUI avancé pour serveurs 1.8.8 Faction/PvP
@@ -111,13 +112,16 @@ public class Kgui extends JavaPlugin {
         
         // Fermer tous les menus ouverts
         if (guiManager != null) {
-            guiManager.closeAllMenus();
+            guiManager.closeAllMenus(CloseReason.DISABLE);
         }
         
         // Arrêter les animations
         if (animationManager != null) {
             animationManager.stopAll();
         }
+        if (inputManager != null) inputManager.cleanup();
+        if (chatInputListener != null) chatInputListener.cleanup();
+        if (playerDataManager != null) playerDataManager.cleanup();
         
         getLogger().info("Kgui disabled.");
         instance = null;
@@ -245,6 +249,9 @@ public class Kgui extends JavaPlugin {
         
         // Fermer tous les menus
         guiManager.closeAllMenus();
+        inputManager.cleanup();
+        chatInputListener.cleanup();
+        playerDataManager.cleanup();
         
         // Arrêter les animations
         animationManager.stopAll();

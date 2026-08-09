@@ -31,4 +31,18 @@ public class RefreshRequestGateTest {
         gate.clear(player);
         assertTrue(gate.trySchedule(player, "second"));
     }
+
+    @Test
+    public void staleSameMenuCompletionCannotClearNewSessionRequest() {
+        RefreshRequestGate gate = new RefreshRequestGate();
+        UUID player = UUID.randomUUID();
+
+        assertTrue(gate.trySchedule(player, "same", 10L));
+        gate.clear(player);
+        assertTrue(gate.trySchedule(player, "same", 11L));
+        gate.complete(player, "same", 10L);
+        assertFalse(gate.trySchedule(player, "same", 11L));
+        gate.complete(player, "same", 11L);
+        assertTrue(gate.trySchedule(player, "same", 12L));
+    }
 }
