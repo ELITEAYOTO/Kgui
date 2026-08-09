@@ -1,3 +1,4 @@
+schema_version: 2
 # ═══════════════════════════════════════════════════════════════════
 #  kjobs_detail_hunter.yml — Détail du job Chasseur
 #  Note: le jobId interne est "hunter", la clé CIT est "chasseur"

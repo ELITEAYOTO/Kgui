@@ -33,7 +33,9 @@ public class KguiTabCompleter implements TabCompleter {
             
             if (sender.hasPermission("kgui.open")) subCommands.add("open");
             if (sender.hasPermission("kgui.reload")) subCommands.add("reload");
+            if (sender.hasPermission("kgui.reload")) subCommands.add("validate");
             if (sender.hasPermission("kgui.debug")) subCommands.add("debug");
+            if (sender.hasPermission("kgui.debug")) subCommands.add("dump");
             if (sender.hasPermission("kgui.list")) subCommands.add("list");
             if (sender.hasPermission("kgui.info")) subCommands.add("info");
             
@@ -45,9 +47,22 @@ public class KguiTabCompleter implements TabCompleter {
             
             switch (subCommand) {
                 case "open":
+                    if (sender.hasPermission("kgui.open")) {
+                        return filterCompletions(new ArrayList<>(plugin.getMenuManager().getMenus().keySet()), args[1]);
+                    }
+                    break;
                 case "info":
-                    // Liste des menus
-                    if (sender.hasPermission("kgui.open") || sender.hasPermission("kgui.info")) {
+                    if (sender.hasPermission("kgui.info")) {
+                        return filterCompletions(new ArrayList<>(plugin.getMenuManager().getMenus().keySet()), args[1]);
+                    }
+                    break;
+                case "dump":
+                    if (sender.hasPermission("kgui.debug")) {
+                        return filterCompletions(new ArrayList<>(plugin.getMenuManager().getMenus().keySet()), args[1]);
+                    }
+                    break;
+                case "reload":
+                    if (sender.hasPermission("kgui.reload")) {
                         return filterCompletions(new ArrayList<>(plugin.getMenuManager().getMenus().keySet()), args[1]);
                     }
                     break;

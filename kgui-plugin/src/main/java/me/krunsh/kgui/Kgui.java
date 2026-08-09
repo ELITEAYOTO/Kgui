@@ -11,7 +11,6 @@ import me.krunsh.kgui.api.KguiApi;
 import me.krunsh.kgui.commands.DynamicCommandManager;
 import me.krunsh.kgui.commands.KguiCommand;
 import me.krunsh.kgui.commands.KguiTabCompleter;
-import me.krunsh.kgui.conditional.ConditionalManager;
 import me.krunsh.kgui.config.ConfigManager;
 import me.krunsh.kgui.config.MessageManager;
 import me.krunsh.kgui.data.PlayerDataManager;
@@ -23,11 +22,11 @@ import me.krunsh.kgui.item.ItemRegistry;
 import me.krunsh.kgui.listeners.GuiListener;
 import me.krunsh.kgui.listeners.SecurityListener;
 import me.krunsh.kgui.menu.MenuManager;
+import me.krunsh.kgui.menu.MenuReloadResult;
 import me.krunsh.kgui.pagination.PaginationManager;
 import me.krunsh.kgui.pagination.ScrollManager;
 import me.krunsh.kgui.requirements.RequirementManager;
 import me.krunsh.kgui.service.KguiApiProvider;
-import me.krunsh.kgui.template.TemplateManager;
 
 /**
  * Kgui - Moteur de GUI avancé pour serveurs 1.8.8 Faction/PvP
@@ -54,8 +53,6 @@ public class Kgui extends JavaPlugin {
     // Phase 2 Managers
     private PaginationManager paginationManager;
     private ScrollManager scrollManager;
-    private ConditionalManager conditionalManager;
-    private TemplateManager templateManager;
     
     // Phase 3 Managers - Input System
     private InputManager inputManager;
@@ -173,10 +170,7 @@ public class Kgui extends JavaPlugin {
         this.requirementManager = new RequirementManager(this);
         this.actionManager = new ActionManager(this, apiProvider);
         
-        // 4. Phase 2 Managers - Templates, Conditions, Pagination
-        this.templateManager = new TemplateManager(this);
-        this.templateManager.loadTemplates();
-        this.conditionalManager = new ConditionalManager(this);
+        // 4. Phase 2 Managers - Pagination
         this.paginationManager = new PaginationManager(this);
         this.scrollManager = new ScrollManager(this);
         
@@ -239,8 +233,15 @@ public class Kgui extends JavaPlugin {
     /**
      * Recharge toute la configuration
      */
-    public void reload() {
+    public MenuReloadResult reload() {
         getLogger().info("Reloading Kgui...");
+
+        // Refuser avant tout effet de bord si le graphe de menus est invalide.
+        MenuReloadResult preflight = menuManager.validate();
+        if (!preflight.isSuccess()) {
+            getLogger().warning("Reload aborted: invalid menu configuration; live state retained");
+            return preflight;
+        }
         
         // Fermer tous les menus
         guiManager.closeAllMenus();
@@ -252,12 +253,9 @@ public class Kgui extends JavaPlugin {
         configManager.reload();
         messageManager.reload();
         
-        // Recharger les templates
-        templateManager.reload();
-        
         // Recharger les items et menus
         itemRegistry.reload();
-        menuManager.reload();
+        MenuReloadResult menuResult = menuManager.reload();
         
         // Recharger les animations
         animationManager.reload();
@@ -268,6 +266,7 @@ public class Kgui extends JavaPlugin {
         }
         
         getLogger().info("Reload complete! " + itemRegistry.getItemCount() + " items, " + menuManager.getMenuCount() + " menus");
+        return menuResult;
     }
 
     // ==================== GETTERS ====================
@@ -318,14 +317,6 @@ public class Kgui extends JavaPlugin {
 
     public ScrollManager getScrollManager() {
         return scrollManager;
-    }
-
-    public ConditionalManager getConditionalManager() {
-        return conditionalManager;
-    }
-
-    public TemplateManager getTemplateManager() {
-        return templateManager;
     }
 
     public InputManager getInputManager() {
