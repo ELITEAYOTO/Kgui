@@ -121,7 +121,11 @@ public class SecurityListener implements Listener {
         
         // Fermer le menu si ouvert
         if (plugin.getGuiManager().hasOpenMenu(event.getPlayer())) {
-            plugin.getGuiManager().closeMenu(event.getPlayer(), false, CloseReason.QUIT);
+            if (plugin.getGuiManager().closeMenu(event.getPlayer(), false, CloseReason.QUIT)) {
+                // Some legacy plugins retain Player after quit. Reset the NMS
+                // container now so that retention cannot keep a Kgui inventory.
+                event.getPlayer().closeInventory();
+            }
         }
     }
 
@@ -130,7 +134,9 @@ public class SecurityListener implements Listener {
         if (plugin.getConfigManager().isCleanOnQuit()) {
             cleanPlayerInventory(event.getPlayer());
         }
-        plugin.getGuiManager().closeMenu(event.getPlayer(), false, CloseReason.KICK);
+        if (plugin.getGuiManager().closeMenu(event.getPlayer(), false, CloseReason.KICK)) {
+            event.getPlayer().closeInventory();
+        }
     }
 
     /**
