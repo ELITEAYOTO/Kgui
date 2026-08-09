@@ -16,6 +16,7 @@ import me.krunsh.kgui.api.ActionContext;
 import me.krunsh.kgui.api.ActionHandler;
 import me.krunsh.kgui.api.ActionResult;
 import me.krunsh.kgui.api.MenuArguments;
+import me.krunsh.kgui.extension.NamespacedRegistry;
 import me.krunsh.kgui.menu.MenuData;
 import me.krunsh.kgui.menu.MenuType;
 import me.krunsh.kgui.pagination.PaginationManager;
@@ -32,8 +33,9 @@ public class ActionManager {
 
     private final Kgui plugin;
     private final KguiApiProvider apiProvider;
-    private final Map<String, ActionExecutor> executors = new HashMap<>();
+    private final NamespacedRegistry<ActionExecutor> executors = new NamespacedRegistry<>("kgui");
     private final ThreadLocal<SessionToken> executionToken = new ThreadLocal<>();
+    private final ThreadLocal<ActionOrigin> executionOrigin = new ThreadLocal<>();
     
     // Pattern pour parser les actions: [type] argument
     private static final Pattern ACTION_PATTERN = Pattern.compile("\\[([^\\]]+)\\]\\s*(.*)");
@@ -56,44 +58,17 @@ public class ActionManager {
      */
     private void registerDefaultExecutors() {
         // [player] - Exécute une commande en tant que joueur
-        executors.put("player", (player, args) -> {
-            String command = plugin.getGuiManager().parsePlaceholders(player, args);
-            if (KfactionCommandPolicy.isReserved(command)) {
-                rejectLegacyFactionCommand(player, command);
-                return;
-            }
-            player.performCommand(command);
-        });
+        executors.register("kgui:player_command", (player, args) ->
+            executeCommand(player, args, false), "player");
         
         // [console] - Exécute une commande depuis la console
-        executors.put("console", (player, args) -> {
-            String command = plugin.getGuiManager().parsePlaceholders(player, args);
-            if (KfactionCommandPolicy.isReserved(command)) {
-                rejectLegacyFactionCommand(player, command);
-                return;
-            }
-            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
-        });
+        executors.register("kgui:console_command", (player, args) ->
+            executeCommand(player, args, true), "console");
         
-        // [op] - Exécute une commande avec OP temporaire (SÉCURISÉ: nécessite kgui.admin)
-        executors.put("op", (player, args) -> {
-            if (!player.hasPermission("kgui.admin")) {
-                plugin.getLogger().warning("[SECURITY] Player " + player.getName() + " tried to use [op] action without kgui.admin permission!");
-                return;
-            }
-            String command = plugin.getGuiManager().parsePlaceholders(player, args);
-            if (KfactionCommandPolicy.isReserved(command)) {
-                rejectLegacyFactionCommand(player, command);
-                return;
-            }
-            boolean wasOp = player.isOp();
-            try {
-                if (!wasOp) player.setOp(true);
-                player.performCommand(command);
-            } finally {
-                if (!wasOp) player.setOp(false);
-            }
-        });
+        // [op] - Alias V1 conservé uniquement pour produire un refus explicite.
+        executors.put("op", (player, args) -> plugin.getLogger().warning(
+            "[SECURITY] Deprecated [op] action denied for " + player.getName()
+                + "; use a typed action or a validated local [console] action."));
         
         // [message] - Envoie un message au joueur
         executors.put("message", (player, args) -> {
@@ -238,36 +213,40 @@ public class ActionManager {
         });
         
         // [take_money] - Retire de l'argent au joueur
-        executors.put("take_money", (player, args) -> {
+        executors.register("vault:withdraw", (player, args) -> {
             if (!plugin.getHookManager().isVaultEnabled()) return;
-            
-            double amount = Double.parseDouble(plugin.getGuiManager().parsePlaceholders(player, args));
-            plugin.getHookManager().getVaultHook().withdraw(player, amount);
-        });
+            Double amount = positiveDouble(plugin.getGuiManager().parsePlaceholders(player, args));
+            if (amount == null || !plugin.getHookManager().getVaultHook().withdraw(player, amount)) {
+                plugin.getLogger().warning("Vault withdrawal denied or failed for " + player.getName());
+            }
+        }, "take_money");
         
         // [give_money] - Donne de l'argent au joueur
-        executors.put("give_money", (player, args) -> {
+        executors.register("vault:deposit", (player, args) -> {
             if (!plugin.getHookManager().isVaultEnabled()) return;
-            
-            double amount = Double.parseDouble(plugin.getGuiManager().parsePlaceholders(player, args));
-            plugin.getHookManager().getVaultHook().deposit(player, amount);
-        });
+            Double amount = positiveDouble(plugin.getGuiManager().parsePlaceholders(player, args));
+            if (amount == null || !plugin.getHookManager().getVaultHook().deposit(player, amount)) {
+                plugin.getLogger().warning("Vault deposit denied or failed for " + player.getName());
+            }
+        }, "give_money");
         
         // [take_points] - Retire des points au joueur
-        executors.put("take_points", (player, args) -> {
+        executors.register("playerpoints:take", (player, args) -> {
             if (!plugin.getHookManager().isPlayerPointsEnabled()) return;
-            
-            int amount = Integer.parseInt(plugin.getGuiManager().parsePlaceholders(player, args));
-            plugin.getHookManager().getPlayerPointsHook().takePoints(player, amount);
-        });
+            Integer amount = positiveInt(plugin.getGuiManager().parsePlaceholders(player, args));
+            if (amount == null || !plugin.getHookManager().getPlayerPointsHook().takePoints(player, amount)) {
+                plugin.getLogger().warning("PlayerPoints withdrawal denied or failed for " + player.getName());
+            }
+        }, "take_points");
         
         // [give_points] - Donne des points au joueur
-        executors.put("give_points", (player, args) -> {
+        executors.register("playerpoints:give", (player, args) -> {
             if (!plugin.getHookManager().isPlayerPointsEnabled()) return;
-            
-            int amount = Integer.parseInt(plugin.getGuiManager().parsePlaceholders(player, args));
-            plugin.getHookManager().getPlayerPointsHook().givePoints(player, amount);
-        });
+            Integer amount = positiveInt(plugin.getGuiManager().parsePlaceholders(player, args));
+            if (amount == null || !plugin.getHookManager().getPlayerPointsHook().givePoints(player, amount)) {
+                plugin.getLogger().warning("PlayerPoints deposit denied or failed for " + player.getName());
+            }
+        }, "give_points");
         
         // [teleport] - Téléporte le joueur FORMAT: world;x;y;z OU x;y;z
         executors.put("teleport", (player, args) -> {
@@ -352,6 +331,9 @@ public class ActionManager {
             Map<String, String> returnArguments = returnMenu == null
                 ? java.util.Collections.emptyMap()
                 : plugin.getGuiManager().getRuntimeArguments(player, returnMenu);
+            ActionOrigin confirmationOrigin = executionOrigin.get();
+            if (confirmationOrigin == null) confirmationOrigin = ActionOrigin.INTERNAL;
+            final ActionOrigin capturedOrigin = confirmationOrigin;
             
             player.closeInventory();
             
@@ -361,7 +343,7 @@ public class ActionManager {
                     // Exécuter l'action de confirmation
                     if (!confirmAction.isEmpty()) {
                         java.util.List<String> confirmActions = java.util.Arrays.asList(confirmAction);
-                        executeActions(player, confirmActions);
+                        executeActions(player, confirmActions, capturedOrigin);
                     }
                 },
                 // Si annulé
@@ -567,13 +549,18 @@ public class ActionManager {
      * Exécute une liste d'actions
      */
     public void executeActions(Player player, List<String> actions) {
+        executeActions(player, actions, ActionOrigin.LOCAL_MENU);
+    }
+
+    public void executeActions(Player player, List<String> actions, ActionOrigin origin) {
         if (actions == null || actions.isEmpty()) return;
-        final SessionToken origin = plugin.getGuiManager().captureSession(player);
+        final ActionOrigin safeOrigin = origin == null ? ActionOrigin.INTERNAL : origin;
+        final SessionToken sessionToken = plugin.getGuiManager().captureSession(player);
         
         int delay = 0;
         
         for (String action : actions) {
-            if (origin != null && !plugin.getGuiManager().isSessionActive(origin)) return;
+            if (sessionToken != null && !plugin.getGuiManager().isSessionActive(sessionToken)) return;
             if (action == null || action.isEmpty()) continue;
             
             Matcher matcher = ACTION_PATTERN.matcher(action);
@@ -608,19 +595,19 @@ public class ActionManager {
             
             // Exécuter avec ou sans delay
             if (delay > 0) {
-                if (origin == null) continue;
+                if (sessionToken == null) continue;
                 final String finalArgs = args;
                 final int currentDelay = delay;
                 scheduleGuarded(player, () -> {
                     try {
-                        runWithToken(origin, () -> selectedExecutor.execute(player, finalArgs));
+                        runWithContext(sessionToken, safeOrigin, () -> selectedExecutor.execute(player, finalArgs));
                     } catch (Exception e) {
                         plugin.getLogger().warning("Error executing action [" + type + "]: " + e.getMessage());
                     }
-                }, currentDelay, origin);
+                }, currentDelay, sessionToken);
             } else {
                 try {
-                    runWithToken(origin, () -> selectedExecutor.execute(player, args));
+                    runWithContext(sessionToken, safeOrigin, () -> selectedExecutor.execute(player, args));
                 } catch (Exception e) {
                     plugin.getLogger().warning("Error executing action [" + type + "]: " + e.getMessage());
                 }
@@ -637,7 +624,7 @@ public class ActionManager {
      * Enregistre un executor personnalisé
      */
     public void registerExecutor(String type, ActionExecutor executor) {
-        executors.put(type.toLowerCase(), executor);
+        executors.register(type, executor);
     }
 
     private void executeRegisteredAction(ActionHandler handler, Player player, String rawArguments) {
@@ -671,13 +658,16 @@ public class ActionManager {
         }
     }
 
-    private void runWithToken(SessionToken token, Runnable action) {
+    private void runWithContext(SessionToken token, ActionOrigin origin, Runnable action) {
         SessionToken previous = executionToken.get();
+        ActionOrigin previousOrigin = executionOrigin.get();
         if (token == null) executionToken.remove(); else executionToken.set(token);
+        if (origin == null) executionOrigin.remove(); else executionOrigin.set(origin);
         try {
             action.run();
         } finally {
             if (previous == null) executionToken.remove(); else executionToken.set(previous);
+            if (previousOrigin == null) executionOrigin.remove(); else executionOrigin.set(previousOrigin);
         }
     }
 
@@ -686,11 +676,12 @@ public class ActionManager {
     }
 
     private void scheduleGuarded(Player player, Runnable action, long delay, SessionToken token) {
+        final ActionOrigin origin = executionOrigin.get();
         final org.bukkit.scheduler.BukkitTask[] reference = new org.bukkit.scheduler.BukkitTask[1];
         org.bukkit.scheduler.BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
             try {
                 if (player.isOnline() && (token == null || plugin.getGuiManager().isSessionActive(token))) {
-                    runWithToken(token, action);
+                    runWithContext(token, origin, action);
                 }
             } finally {
                 if (token != null) plugin.getGuiManager().untrackSessionTask(token, reference[0]);
@@ -719,6 +710,53 @@ public class ActionManager {
     private void rejectLegacyFactionCommand(Player player, String command) {
         plugin.getLogger().warning("Blocked legacy Kfaction command action for " + player.getName()
                 + "; register and use a typed [kfaction:...] action instead: " + command);
+    }
+
+    private void executeCommand(Player player, String template, boolean console) {
+        ActionOrigin origin = executionOrigin.get();
+        if (origin == null) origin = ActionOrigin.INTERNAL;
+        boolean safeTemplate = console
+            ? CommandSecurityPolicy.isSafeConsoleTemplate(template, origin)
+            : CommandSecurityPolicy.isSafePlayerTemplate(template);
+        if (!safeTemplate) {
+            plugin.getLogger().warning("[SECURITY] Rejected unsafe " + (console ? "console" : "player")
+                + " command template for " + player.getName());
+            return;
+        }
+
+        String command = plugin.getGuiManager().parsePlaceholders(player, template).trim();
+        while (command.startsWith("/")) command = command.substring(1).trim();
+        if (KfactionCommandPolicy.isReserved(command)) {
+            rejectLegacyFactionCommand(player, command);
+            return;
+        }
+        if (!CommandSecurityPolicy.isSafeResolvedCommand(command, console)) {
+            plugin.getLogger().warning("[SECURITY] Rejected unsafe resolved command for " + player.getName());
+            return;
+        }
+
+        if (console) Bukkit.dispatchCommand(Bukkit.getConsoleSender(), command);
+        else player.performCommand(command);
+    }
+
+    private static Double positiveDouble(String raw) {
+        if (raw == null) return null;
+        try {
+            double value = Double.parseDouble(raw.trim());
+            return Double.isFinite(value) && value > 0D ? value : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static Integer positiveInt(String raw) {
+        if (raw == null) return null;
+        try {
+            int value = Integer.parseInt(raw.trim());
+            return value > 0 ? value : null;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 
     /**

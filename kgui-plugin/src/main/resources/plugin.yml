@@ -9,7 +9,6 @@ softdepend:
   - ProtocolLib
   - WorldGuard
   - CombatTagPlus
-  - zAuctionHouse
   - HeadDatabase
   - PlayerPoints
   - Kfaction

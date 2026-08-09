@@ -1,6 +1,7 @@
 package me.krunsh.kgui.listeners;
 
 import me.krunsh.kgui.Kgui;
+import me.krunsh.kgui.actions.ActionOrigin;
 import me.krunsh.kgui.config.ConfigManager;
 import me.krunsh.kgui.gui.KguiInventoryHolder;
 import me.krunsh.kgui.render.ClickBinding;
@@ -66,7 +67,8 @@ public final class GuiListener implements Listener {
         }
 
         playClickSound(player);
-        if (!plugin.getRequirementManager().checkRequirements(player, binding.getRequirements(), true)) {
+        if (!plugin.getRequirementManager().checkRequirements(player, binding.getRequirements(), true,
+                session.getMenuId(), binding.getId())) {
             plugin.getActionManager().executeActions(player, binding.getDenyActions());
             return;
         }
@@ -76,7 +78,8 @@ public final class GuiListener implements Listener {
         if (cooldownTicks > 0) {
             plugin.getGuiManager().setItemCooldown(player, session.getMenuId(), binding.getId());
         }
-        plugin.getActionManager().executeActions(player, actions);
+        plugin.getActionManager().executeActions(player, actions,
+            binding.isProviderOwned() ? ActionOrigin.PROVIDER : ActionOrigin.LOCAL_MENU);
     }
 
     private void playClickSound(Player player) {

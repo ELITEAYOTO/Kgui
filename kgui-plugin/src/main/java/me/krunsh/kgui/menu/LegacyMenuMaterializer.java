@@ -157,7 +157,7 @@ final class LegacyMenuMaterializer {
         if ("permission".equals(requirement.get("type"))) requirement.put("permission", value);
         else if ("money".equals(requirement.get("type")) || "points".equals(requirement.get("type"))) {
             try { requirement.put("amount", Double.parseDouble(value)); }
-            catch (NumberFormatException ignored) { requirement.put("amount", 0D); }
+            catch (NumberFormatException ignored) { requirement.put("amount", value); }
         } else if ("world".equals(requirement.get("type"))) requirement.put("world", value);
         else if ("region".equals(requirement.get("type"))) requirement.put("region", value);
         else if ("expression".equals(requirement.get("type"))) requirement.put("expression", value);

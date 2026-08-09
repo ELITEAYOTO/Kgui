@@ -1,98 +1,70 @@
 package me.krunsh.kgui.hooks;
 
-import me.krunsh.kgui.Kgui;
-import net.milkbowl.vault.economy.Economy;
-import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
-/**
- * Hook pour Vault (Economy & Permissions)
- */
-public class VaultHook {
+/** Adaptateur Vault par reflection, sans reference forte apres close(). */
+public final class VaultHook implements AutoCloseable {
+    private Object economy;
+    private Object permission;
 
-    private final Kgui plugin;
-    private Economy economy;
-    private Permission permission;
-
-    public VaultHook(Kgui plugin) {
-        this.plugin = plugin;
-        setupEconomy();
-        setupPermissions();
-    }
-
-    private void setupEconomy() {
-        if (Bukkit.getPluginManager().getPlugin("Vault") == null) {
-            return;
-        }
-        RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
-        if (rsp == null) {
-            return;
-        }
-        economy = rsp.getProvider();
-    }
-
-    private void setupPermissions() {
-        RegisteredServiceProvider<Permission> rsp = Bukkit.getServicesManager().getRegistration(Permission.class);
-        if (rsp != null) {
-            permission = rsp.getProvider();
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public VaultHook(Plugin dependency) throws ReflectiveOperationException {
+        ClassLoader loader = dependency.getClass().getClassLoader();
+        Class<?> economyType = ReflectionAccess.load(loader, "net.milkbowl.vault.economy.Economy");
+        RegisteredServiceProvider<?> economyRegistration = Bukkit.getServicesManager().getRegistration((Class) economyType);
+        economy = economyRegistration == null ? null : economyRegistration.getProvider();
+        try {
+            Class<?> permissionType = ReflectionAccess.load(loader, "net.milkbowl.vault.permission.Permission");
+            RegisteredServiceProvider<?> permissionRegistration = Bukkit.getServicesManager().getRegistration((Class) permissionType);
+            permission = permissionRegistration == null ? null : permissionRegistration.getProvider();
+        } catch (ClassNotFoundException ignored) {
+            permission = null;
         }
     }
 
-    public boolean isEconomyEnabled() {
-        return economy != null;
-    }
-
-    public boolean isPermissionEnabled() {
-        return permission != null;
-    }
-
-    /**
-     * Obtient le solde d'un joueur
-     */
-    public double getBalance(Player player) {
-        if (economy == null) return 0;
-        return economy.getBalance(player);
-    }
-
-    /**
-     * Vérifie si le joueur a assez d'argent
-     */
+    public boolean isEconomyEnabled() { return economy != null; }
+    public boolean isPermissionEnabled() { return permission != null; }
+    public double getBalance(Player player) { return number(invoke(economy, "getBalance", player)).doubleValue(); }
     public boolean hasBalance(Player player, double amount) {
-        if (economy == null) return false;
-        return economy.has(player, amount);
+        return amount >= 0D && Boolean.TRUE.equals(invoke(economy, "has", player, amount));
     }
-
-    /**
-     * Retire de l'argent au joueur
-     */
-    public boolean withdraw(Player player, double amount) {
-        if (economy == null) return false;
-        return economy.withdrawPlayer(player, amount).transactionSuccess();
-    }
-
-    /**
-     * Donne de l'argent au joueur
-     */
-    public boolean deposit(Player player, double amount) {
-        if (economy == null) return false;
-        return economy.depositPlayer(player, amount).transactionSuccess();
-    }
-
-    /**
-     * Formate un montant selon la configuration de l'économie
-     */
+    public boolean withdraw(Player player, double amount) { return transaction("withdrawPlayer", player, amount); }
+    public boolean deposit(Player player, double amount) { return transaction("depositPlayer", player, amount); }
     public String format(double amount) {
-        if (economy == null) return String.valueOf(amount);
-        return economy.format(amount);
+        Object result = invoke(economy, "format", amount);
+        return result instanceof String ? (String) result : String.valueOf(amount);
+    }
+    public String getPrimaryGroup(Player player) {
+        Object result = invoke(permission, "getPrimaryGroup", player);
+        return result instanceof String ? (String) result : "";
     }
 
-    /**
-     * Obtient le groupe principal du joueur
-     */
-    public String getPrimaryGroup(Player player) {
-        if (permission == null) return "";
-        return permission.getPrimaryGroup(player);
+    private boolean transaction(String method, Player player, double amount) {
+        if (economy == null || !Double.isFinite(amount) || amount <= 0D) return false;
+        Object response = invoke(economy, method, player, amount);
+        if (response == null) return false;
+        Object success = invoke(response, "transactionSuccess");
+        return Boolean.TRUE.equals(success);
+    }
+
+    private static Object invoke(Object target, String method, Object... arguments) {
+        if (target == null) return null;
+        try {
+            return ReflectionAccess.invoke(target,
+                ReflectionAccess.compatibleMethod(target.getClass(), method, arguments), arguments);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private static Number number(Object value) { return value instanceof Number ? (Number) value : Double.valueOf(0D); }
+
+    @Override
+    public void close() {
+        economy = null;
+        permission = null;
     }
 }

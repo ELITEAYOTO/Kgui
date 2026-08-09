@@ -1,87 +1,79 @@
 package me.krunsh.kgui.hooks;
 
-import com.comphenix.protocol.PacketType;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import me.krunsh.kgui.Kgui;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
-import java.lang.reflect.InvocationTargetException;
+import me.krunsh.kgui.Kgui;
 
-/**
- * Hook pour ProtocolLib
- * Permet des updates d'inventaire plus performants
- */
-public class ProtocolLibHook {
-
+/** Adaptateur ProtocolLib optionnel sans dependance Maven ni lien de classloader permanent. */
+public final class ProtocolLibHook implements AutoCloseable {
     private final Kgui plugin;
-    private ProtocolManager protocolManager;
+    private Object protocolManager;
+    private Object setSlotPacketType;
+    private Method createPacket;
 
-    public ProtocolLibHook(Kgui plugin) {
+    public ProtocolLibHook(Kgui plugin, Plugin dependency) throws ReflectiveOperationException {
         this.plugin = plugin;
-        this.protocolManager = ProtocolLibrary.getProtocolManager();
+        ClassLoader loader = dependency.getClass().getClassLoader();
+        Class<?> protocolLibrary = ReflectionAccess.load(loader, "com.comphenix.protocol.ProtocolLibrary");
+        protocolManager = ReflectionAccess.invoke(null, ReflectionAccess.method(protocolLibrary, "getProtocolManager", 0));
+        if (protocolManager == null) throw new IllegalStateException("ProtocolManager unavailable");
+        Class<?> serverTypes = ReflectionAccess.load(loader, "com.comphenix.protocol.PacketType$Play$Server");
+        Field setSlot = serverTypes.getField("SET_SLOT");
+        setSlotPacketType = setSlot.get(null);
+        createPacket = ReflectionAccess.compatibleMethod(protocolManager.getClass(), "createPacket", setSlotPacketType);
     }
 
-    /**
-     * Envoie une mise à jour d'un seul slot au client
-     * Plus performant que player.updateInventory()
-     */
     public void sendSlotUpdate(Player player, int slot, ItemStack item) {
+        if (protocolManager == null || createPacket == null || player == null) return;
         try {
-            // Packet SET_SLOT pour 1.8
-            PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.SET_SLOT);
-            
-            // Window ID (0 = inventaire joueur, >0 = autre inventaire)
-            // Pour un GUI ouvert, on utilise l'ID de la fenêtre active
-            packet.getIntegers().write(0, getWindowId(player));
-            
-            // Slot
-            packet.getIntegers().write(1, slot);
-            
-            // Item
-            packet.getItemModifier().write(0, item);
-            
-            protocolManager.sendServerPacket(player, packet);
-            
-        } catch (InvocationTargetException e) {
-            // Fallback sur méthode standard
+            Object packet = ReflectionAccess.invoke(protocolManager, createPacket, setSlotPacketType);
+            Object integers = ReflectionAccess.invoke(packet, ReflectionAccess.method(packet.getClass(), "getIntegers", 0));
+            write(integers, 0, getWindowId(player));
+            write(integers, 1, slot);
+            Object itemModifier = ReflectionAccess.invoke(packet,
+                ReflectionAccess.method(packet.getClass(), "getItemModifier", 0));
+            write(itemModifier, 0, item);
+            Method send = ReflectionAccess.compatibleMethod(protocolManager.getClass(), "sendServerPacket", player, packet);
+            ReflectionAccess.invoke(protocolManager, send, player, packet);
+        } catch (ReflectiveOperationException | RuntimeException error) {
             player.updateInventory();
-            
             if (plugin.getConfigManager().isDebug()) {
-                plugin.getLogger().warning("[Debug] ProtocolLib slot update failed: " + e.getMessage());
+                plugin.getLogger().warning("[Debug] ProtocolLib slot update failed: " + error.getMessage());
             }
         }
     }
 
-    /**
-     * Obtient l'ID de la fenêtre active du joueur
-     */
+    public void sendMultipleSlotUpdates(Player player, int[] slots, ItemStack[] items) {
+        if (slots == null || items == null || slots.length != items.length) return;
+        for (int index = 0; index < slots.length; index++) sendSlotUpdate(player, slots[index], items[index]);
+    }
+
+    private static void write(Object modifier, int index, Object value) throws ReflectiveOperationException {
+        Method write = ReflectionAccess.compatibleMethod(modifier.getClass(), "write", index, value);
+        ReflectionAccess.invoke(modifier, write, index, value);
+    }
+
     private int getWindowId(Player player) {
         try {
-            // Accès via reflection pour 1.8
             Object handle = player.getClass().getMethod("getHandle").invoke(player);
             Object activeContainer = handle.getClass().getField("activeContainer").get(handle);
-            return (int) activeContainer.getClass().getField("windowId").get(activeContainer);
-        } catch (Exception e) {
-            // Par défaut, utiliser 0
+            return activeContainer.getClass().getField("windowId").getInt(activeContainer);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
             return 0;
         }
     }
 
-    /**
-     * Envoie une mise à jour de plusieurs slots
-     */
-    public void sendMultipleSlotUpdates(Player player, int[] slots, ItemStack[] items) {
-        if (slots.length != items.length) return;
-        
-        for (int i = 0; i < slots.length; i++) {
-            sendSlotUpdate(player, slots[i], items[i]);
-        }
-    }
+    public Object getProtocolManager() { return protocolManager; }
 
-    public ProtocolManager getProtocolManager() {
-        return protocolManager;
+    @Override
+    public void close() {
+        createPacket = null;
+        setSlotPacketType = null;
+        protocolManager = null;
     }
 }

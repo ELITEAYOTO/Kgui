@@ -43,7 +43,6 @@ requirement-placeholder-check-failed: "&cCondition non remplie."
 
 # Messages de sécurité
 item-removed: "&7Un item de GUI a été supprimé de votre inventaire."
-auction-blocked: "&cVous ne pouvez pas vendre des items de GUI!"
 
 # Messages de debug
 debug-enabled: "&aMode debug activé pour &e%player%&a."

@@ -22,9 +22,6 @@ security:
   # Nettoyer l'inventaire quand le joueur se déconnecte
   clean_on_quit: true
   
-  # Bloquer la vente d'items GUI sur ZAuctionHouse
-  block_auction_house: true
-
 # ==============================================================
 # COMBAT
 # ==============================================================

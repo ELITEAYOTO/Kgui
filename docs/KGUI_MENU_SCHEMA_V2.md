@@ -1,5 +1,8 @@
 # Kgui — schéma de menus V2
 
+Les actions, conditions, expressions, namespaces et règles de sécurité sont détaillés dans
+`KGUI_ACTIONS_REQUIREMENTS_EXTENSIONS_V2.md`.
+
 Le compilateur V2 lit exclusivement les fichiers `*.yml` placés dans `plugins/Kgui/menus/` et
 `plugins/Kgui/templates/`. Un fichier n'est publié dans le cache actif qu'après validation de
 l'ensemble des menus et de leurs dépendances. En cas d'erreur, le dernier état valide reste actif.
