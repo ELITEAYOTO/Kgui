@@ -8,6 +8,10 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,6 +22,11 @@ public class MenuCompilerTest {
         "faction_menu", "faction_members", "faction_claims", "faction_logs", "faction_warps",
         "faction_quests", "faction_rewards", "faction_relations", "faction_invites", "faction_zones"
     };
+    private static final String[] KJOBS_PACK_MENUS = {
+        "kjobs_main", "kjobs_detail", "kjobs_quests", "kjobs_top",
+        "kjobs_settings", "kjobs_confirm_leave"
+    };
+    private static final String[] KIT_PACK_MENUS = {"kits", "kits_jeux", "kits_ranks"};
 
     @Rule
     public TemporaryFolder temporary = new TemporaryFolder();
@@ -29,14 +38,53 @@ public class MenuCompilerTest {
             new File(resources, "templates"), new File(resources, "menus")).compileAll();
 
         assertTrue(diagnostics(result), result.isSuccess());
-        assertTrue(result.getMenus().size() >= 19);
+        assertEquals(22, result.getMenus().size());
         for (String menuId : KFACTION_PACK_MENUS) {
             CompiledMenu menu = result.getMenus().get(menuId);
             assertNotNull(menuId, menu);
             assertEquals(menuId, "kfaction:available",
                 menu.toYamlConfiguration().getString("open_requirements.api.type"));
         }
+        for (String menuId : KJOBS_PACK_MENUS) {
+            CompiledMenu menu = result.getMenus().get(menuId);
+            assertNotNull(menuId, menu);
+            assertEquals(menuId, "kjobsultimate:available",
+                menu.toYamlConfiguration().getString("open_requirements.api.type"));
+        }
+        for (String menuId : KIT_PACK_MENUS) assertNotNull(menuId, result.getMenus().get(menuId));
         assertEquals(0, result.getWarningCount());
+    }
+
+    @Test
+    public void bundledOpeningCommandsAreUniqueInsideThePack() {
+        File resources = new File("src/main/resources");
+        MenuCompilationResult result = new MenuCompiler(
+            new File(resources, "templates"), new File(resources, "menus")).compileAll();
+        assertTrue(diagnostics(result), result.isSuccess());
+
+        Map<String, String> commandOwners = new HashMap<>();
+        Set<String> duplicates = new HashSet<>();
+        for (CompiledMenu menu : result.getMenus().values()) {
+            for (String command : menu.toYamlConfiguration().getStringList("open_commands")) {
+                String previous = commandOwners.put(command.toLowerCase(java.util.Locale.ROOT), menu.getId());
+                if (previous != null) duplicates.add(command + "=" + previous + "/" + menu.getId());
+            }
+        }
+        assertTrue("duplicate opening commands: " + duplicates, duplicates.isEmpty());
+    }
+
+    @Test
+    public void duplicateOpeningCommandsFailCompilation() throws Exception {
+        Layout layout = layout();
+        write(layout.menus, "first.yml",
+            "schema_version: 2\ntitle: First\nsize: 9\nopen_commands: [shared]\nitems: {}\n");
+        write(layout.menus, "second.yml",
+            "schema_version: 2\ntitle: Second\nsize: 9\nopen_commands: [shared]\nitems: {}\n");
+
+        MenuCompilationResult result = new MenuCompiler(layout.templates, layout.menus).compileAll();
+
+        assertFalse(result.isSuccess());
+        assertNotNull(find(result, "DUPLICATE_OPEN_COMMAND"));
     }
 
     @Test
@@ -293,7 +341,7 @@ public class MenuCompilerTest {
             "size: 54\n" +
             "type: scroll\n" +
             "open_command: complete\n" +
-            "open_commands: [complete, cgui]\n" +
+            "open_commands: [cgui]\n" +
             "open_actions: ['[message] open']\n" +
             "close_actions: ['[message] close']\n" +
             "open_requirements:\n" +

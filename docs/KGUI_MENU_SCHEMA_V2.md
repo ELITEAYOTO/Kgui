@@ -53,6 +53,12 @@ schema_version: 2
 Une clé inconnue est une erreur. Il est interdit de combiner `template`, `extends` et `inherit_from`
 dans un même fichier.
 
+Les commandes d'ouverture sont normalisées sans `/`, limitées à 32 caractères (`a-z`, chiffres,
+`_` et `-`) et doivent être uniques dans tout le pack compilé. Au runtime, Kgui ne remplace jamais
+une commande ou un alias déjà possédé par un autre plugin : la collision est journalisée et seul cet
+alias Kgui est ignoré. Utiliser une commande unique évite donc tout comportement dépendant de l'ordre
+de chargement des plugins.
+
 ## Templates et fusion
 
 Un template utilise exactement le même schéma qu'un menu et peut lui-même hériter d'un template.

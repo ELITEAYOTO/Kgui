@@ -1,0 +1,36 @@
+schema_version: 2
+id: kjobs_detail
+title: "&8Détail du métier"
+size: 27
+type: pagination
+refresh: {policy: EVENT}
+open_requirements:
+  api: {type: "kjobsultimate:available", deny_message: "&cKjobsUltimate est absent ou incompatible."}
+  data: {type: "kjobsultimate:data_loaded", deny_message: "&eTes données de métiers sont encore en chargement."}
+pagination:
+  enabled: true
+  navigation: PAGE
+  content_slots: [13, 20, 24]
+  prev_button_slot: -1
+  next_button_slot: -1
+  max_pages: 1
+  provider: "kjobsultimate:job_detail"
+  empty_message: "&cMétier inconnu ou argument manquant."
+  empty_item: {material: BARRIER, display_name: "&cMétier indisponible"}
+items:
+  background:
+    slots: "0-12,14-19,21,23,25"
+    material: STAINED_GLASS_PANE
+    data: 15
+    display_name: " "
+    kgui_protected: true
+  back:
+    slot: 22
+    material: ARROW
+    display_name: "&eRetour aux métiers"
+    click_actions: ["[kjobsultimate:open_main]"]
+  close:
+    slot: 26
+    material: BARRIER
+    display_name: "&cFermer"
+    click_actions: ["[close]"]

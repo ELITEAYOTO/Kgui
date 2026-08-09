@@ -1,0 +1,49 @@
+schema_version: 2
+id: kits_ranks
+title: "&8☰ &6&lKits de grade &8☰"
+size: 54
+open_commands: [kitranks, kitsranks, guikitranks]
+allowed_worlds: [world]
+block_in_combat: true
+cooldown: 1
+refresh: {policy: EVENT}
+items:
+  volkarien:
+    slot: 20
+    material: DIAMOND_CHESTPLATE
+    display_name: "&7&lKit Volkarien"
+    hide_attributes: true
+    click_actions: ["[player] playerkits2:kit claim Volkarien"]
+  pyron:
+    slot: 21
+    material: DIAMOND_CHESTPLATE
+    cit: saphir_chestplate
+    display_name: "&6&lKit Pyron"
+    hide_attributes: true
+    click_actions: ["[player] playerkits2:kit claim Pyron"]
+  centurion:
+    slot: 22
+    material: DIAMOND_CHESTPLATE
+    cit: saphir_chestplate
+    display_name: "&e&lKit Centurion"
+    hide_attributes: true
+    click_actions: ["[player] playerkits2:kit claim Centurion"]
+  pretorien:
+    slot: 23
+    material: DIAMOND_CHESTPLATE
+    cit: jaspe_chestplate
+    display_name: "&c&lKit Prétorien"
+    hide_attributes: true
+    click_actions: ["[player] playerkits2:kit claim Pretorien"]
+  sultan:
+    slot: 24
+    material: DIAMOND_CHESTPLATE
+    cit: jaspe_chestplate
+    display_name: "&6&lKit Sul&e&ltan"
+    hide_attributes: true
+    click_actions: ["[player] playerkits2:kit claim Sultan"]
+  back:
+    slot: 49
+    material: ARROW
+    display_name: "&eRetour aux kits"
+    click_actions: ["[open] kits"]

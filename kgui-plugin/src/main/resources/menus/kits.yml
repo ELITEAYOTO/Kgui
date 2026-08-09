@@ -1,0 +1,37 @@
+schema_version: 2
+id: kits
+title: "&8☰ &6&lKits Volkaria &8☰"
+size: 54
+open_commands: [guikit, guikits]
+allowed_worlds: [world]
+block_in_combat: true
+cooldown: 1
+refresh: {policy: EVENT}
+items:
+  background:
+    slots: "0-21,23-29,31,33-53"
+    material: CLAY_BALL
+    cit: BackgroundHebreu2
+    display_name: " "
+    hide_attributes: true
+    kgui_protected: true
+  boutique:
+    slot: 22
+    material: CLAY_BALL
+    cit: vip
+    display_name: "&e&lBoutique"
+    lore: ["&7Ouvrir la boutique des grades."]
+    click_actions: ["[player] shop boutique", "[close]"]
+  ranks:
+    slot: 30
+    material: CLAY_BALL
+    cit: rank
+    display_name: "&6&lKits de grade"
+    click_actions: ["[open] kits_ranks"]
+  gameplay:
+    slot: 32
+    material: CLAY_BALL
+    cit: potion2
+    display_name: "&5&lKits de jeu"
+    click_actions: ["[open] kits_jeux"]
+

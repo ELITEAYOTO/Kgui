@@ -1,0 +1,41 @@
+schema_version: 2
+id: kjobs_settings
+title: "&8Affichage des métiers"
+size: 27
+refresh: {policy: EVENT}
+open_requirements:
+  api: {type: "kjobsultimate:available", deny_message: "&cKjobsUltimate est absent ou incompatible."}
+  data: {type: "kjobsultimate:data_loaded", deny_message: "&eTes données de métiers sont encore en chargement."}
+items:
+  background:
+    slots: "0-10,12,14,16-21,23-25"
+    material: STAINED_GLASS_PANE
+    data: 15
+    display_name: " "
+    kgui_protected: true
+  hud:
+    slot: 11
+    material: EYE_OF_ENDER
+    display_name: "&aActiver/désactiver tout le HUD"
+    click_actions: ["[kjobsultimate:toggle_hud]"]
+  bossbar:
+    slot: 13
+    material: ENDER_PORTAL_FRAME
+    display_name: "&dActiver/désactiver la BossBar"
+    click_actions: ["[kjobsultimate:toggle_bossbar]"]
+  actionbar:
+    slot: 15
+    material: SIGN
+    display_name: "&bActiver/désactiver l'ActionBar"
+    click_actions: ["[kjobsultimate:toggle_actionbar]"]
+  back:
+    slot: 22
+    material: ARROW
+    display_name: "&eRetour aux métiers"
+    click_actions: ["[kjobsultimate:open_main]"]
+  close:
+    slot: 26
+    material: BARRIER
+    display_name: "&cFermer"
+    click_actions: ["[close]"]
+
