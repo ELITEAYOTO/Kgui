@@ -4,6 +4,7 @@ import de.tr7zw.changeme.nbtapi.NBTItem;
 import me.krunsh.kgui.Kgui;
 import me.krunsh.kgui.gui.KguiInventoryHolder;
 import me.krunsh.kgui.gui.OpenGui;
+import me.krunsh.kgui.session.SessionToken;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -142,6 +143,8 @@ public class AnimationManager {
         if (animation.getFrames().isEmpty()) return;
         
         UUID uuid = player.getUniqueId();
+        final SessionToken token = plugin.getGuiManager().captureSession(player);
+        if (token == null) return;
         
         // Créer la tâche d'animation
         BukkitTask task = new BukkitRunnable() {
@@ -151,14 +154,14 @@ public class AnimationManager {
             @Override
             public void run() {
                 // Vérifier que le joueur est toujours connecté
-                if (!player.isOnline()) {
+                if (!player.isOnline() || !plugin.getGuiManager().isSessionActive(token)) {
                     cancel();
                     return;
                 }
                 
                 // Vérifier que l'inventaire est toujours ouvert
                 Inventory topInventory = player.getOpenInventory().getTopInventory();
-                if (!KguiInventoryHolder.isKguiInventory(topInventory)) {
+                if (plugin.getGuiManager().resolveSession(player, topInventory) == null) {
                     cancel();
                     return;
                 }
@@ -195,6 +198,7 @@ public class AnimationManager {
         
         // Stocker la tâche
         runningAnimations.computeIfAbsent(uuid, k -> new ArrayList<>()).add(task);
+        if (!plugin.getGuiManager().trackSessionTask(token, task)) task.cancel();
     }
 
     /**
@@ -205,6 +209,8 @@ public class AnimationManager {
         if (animation == null || animation.getFrames().isEmpty()) return;
         
         UUID uuid = player.getUniqueId();
+        final SessionToken token = plugin.getGuiManager().captureSession(player);
+        if (token == null) return;
         
         BukkitTask task = new BukkitRunnable() {
             private int frameIndex = 0;
@@ -212,13 +218,13 @@ public class AnimationManager {
             
             @Override
             public void run() {
-                if (!player.isOnline()) {
+                if (!player.isOnline() || !plugin.getGuiManager().isSessionActive(token)) {
                     cancel();
                     return;
                 }
                 
                 Inventory topInventory = player.getOpenInventory().getTopInventory();
-                if (!KguiInventoryHolder.isKguiInventory(topInventory)) {
+                if (plugin.getGuiManager().resolveSession(player, topInventory) == null) {
                     cancel();
                     return;
                 }
@@ -229,7 +235,7 @@ public class AnimationManager {
                 if (item != null) {
                     for (int slot : slots) {
                         if (slot >= 0 && slot < topInventory.getSize()) {
-                            topInventory.setItem(slot, item);
+                            plugin.getGuiManager().updateSlot(player, slot, item);
                         }
                     }
                 }
@@ -252,6 +258,7 @@ public class AnimationManager {
         }.runTaskTimer(plugin, 0L, animation.getInterval());
         
         runningAnimations.computeIfAbsent(uuid, k -> new ArrayList<>()).add(task);
+        if (!plugin.getGuiManager().trackSessionTask(token, task)) task.cancel();
     }
 
     /**

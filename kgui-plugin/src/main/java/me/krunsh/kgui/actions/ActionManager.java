@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.UUID;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
@@ -20,6 +21,7 @@ import me.krunsh.kgui.menu.MenuType;
 import me.krunsh.kgui.pagination.PaginationManager;
 import me.krunsh.kgui.pagination.ScrollManager;
 import me.krunsh.kgui.service.KguiApiProvider;
+import me.krunsh.kgui.session.SessionToken;
 import me.krunsh.kgui.utils.ColorUtils;
 
 /**
@@ -31,6 +33,7 @@ public class ActionManager {
     private final Kgui plugin;
     private final KguiApiProvider apiProvider;
     private final Map<String, ActionExecutor> executors = new HashMap<>();
+    private final ThreadLocal<SessionToken> executionToken = new ThreadLocal<>();
     
     // Pattern pour parser les actions: [type] argument
     private static final Pattern ACTION_PATTERN = Pattern.compile("\\[([^\\]]+)\\]\\s*(.*)");
@@ -147,7 +150,7 @@ public class ActionManager {
         executors.put("open", (player, args) -> {
             String menuId = args.trim();
             // Délai d'un tick pour éviter les conflits
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            scheduleGuarded(player, () -> {
                 plugin.getGuiManager().openMenu(player, menuId);
             }, 1L);
         });
@@ -155,7 +158,7 @@ public class ActionManager {
         // [open_menu] - Alias pour [open]
         executors.put("open_menu", (player, args) -> {
             String menuId = args.trim();
-            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            scheduleGuarded(player, () -> {
                 plugin.getGuiManager().openMenu(player, menuId);
             }, 1L);
         });
@@ -164,7 +167,7 @@ public class ActionManager {
         executors.put("back", (player, args) -> {
             String previousMenu = plugin.getGuiManager().getPlayerPreviousMenu(player);
             if (previousMenu != null) {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                scheduleGuarded(player, () -> {
                     plugin.getGuiManager().openMenuBack(player, previousMenu);
                 }, 1L);
             } else {
@@ -345,6 +348,10 @@ public class ActionManager {
             String confirmAction = parts.length > 0 ? parts[0].trim() : "";
             String title = parts.length > 1 ? plugin.getGuiManager().parsePlaceholders(player, parts[1]) : "Confirmer?";
             String description = parts.length > 2 ? plugin.getGuiManager().parsePlaceholders(player, parts[2]) : "";
+            String returnMenu = plugin.getGuiManager().getPlayerCurrentMenu(player);
+            Map<String, String> returnArguments = returnMenu == null
+                ? java.util.Collections.emptyMap()
+                : plugin.getGuiManager().getRuntimeArguments(player, returnMenu);
             
             player.closeInventory();
             
@@ -359,10 +366,9 @@ public class ActionManager {
                 },
                 // Si annulé
                 () -> {
-                    // Rien faire ou rouvrir le menu précédent
-                    String previousMenu = plugin.getGuiManager().getPlayerPreviousMenu(player);
-                    if (previousMenu != null) {
-                        plugin.getGuiManager().openMenuBack(player, previousMenu);
+                    // Rouvrir la vue qui a demande la confirmation.
+                    if (returnMenu != null) {
+                        plugin.getGuiManager().openMenuBack(player, returnMenu, returnArguments);
                     }
                 }
             );
@@ -514,12 +520,12 @@ public class ActionManager {
             String menuType = args.trim();
             if (menuType.isEmpty()) {
                 // Ouvrir le menu principal via Kgui
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                scheduleGuarded(player, () -> {
                     plugin.getGuiManager().openMenu(player, "faction_menu");
                 }, 1L);
             } else {
                 // Ouvrir un sous-menu spécifique
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                scheduleGuarded(player, () -> {
                     plugin.getGuiManager().openMenu(player, "faction_" + menuType);
                 }, 1L);
             }
@@ -562,10 +568,12 @@ public class ActionManager {
      */
     public void executeActions(Player player, List<String> actions) {
         if (actions == null || actions.isEmpty()) return;
+        final SessionToken origin = plugin.getGuiManager().captureSession(player);
         
         int delay = 0;
         
         for (String action : actions) {
+            if (origin != null && !plugin.getGuiManager().isSessionActive(origin)) return;
             if (action == null || action.isEmpty()) continue;
             
             Matcher matcher = ACTION_PATTERN.matcher(action);
@@ -600,18 +608,19 @@ public class ActionManager {
             
             // Exécuter avec ou sans delay
             if (delay > 0) {
+                if (origin == null) continue;
                 final String finalArgs = args;
                 final int currentDelay = delay;
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                scheduleGuarded(player, () -> {
                     try {
-                        selectedExecutor.execute(player, finalArgs);
+                        runWithToken(origin, () -> selectedExecutor.execute(player, finalArgs));
                     } catch (Exception e) {
                         plugin.getLogger().warning("Error executing action [" + type + "]: " + e.getMessage());
                     }
-                }, currentDelay);
+                }, currentDelay, origin);
             } else {
                 try {
-                    selectedExecutor.execute(player, args);
+                    runWithToken(origin, () -> selectedExecutor.execute(player, args));
                 } catch (Exception e) {
                     plugin.getLogger().warning("Error executing action [" + type + "]: " + e.getMessage());
                 }
@@ -660,6 +669,42 @@ public class ActionManager {
         if (result.shouldInvalidate()) {
             plugin.getGuiManager().refreshMenu(player);
         }
+    }
+
+    private void runWithToken(SessionToken token, Runnable action) {
+        SessionToken previous = executionToken.get();
+        if (token == null) executionToken.remove(); else executionToken.set(token);
+        try {
+            action.run();
+        } finally {
+            if (previous == null) executionToken.remove(); else executionToken.set(previous);
+        }
+    }
+
+    private void scheduleGuarded(Player player, Runnable action, long delay) {
+        scheduleGuarded(player, action, delay, executionToken.get());
+    }
+
+    private void scheduleGuarded(Player player, Runnable action, long delay, SessionToken token) {
+        final org.bukkit.scheduler.BukkitTask[] reference = new org.bukkit.scheduler.BukkitTask[1];
+        org.bukkit.scheduler.BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            try {
+                if (player.isOnline() && (token == null || plugin.getGuiManager().isSessionActive(token))) {
+                    runWithToken(token, action);
+                }
+            } finally {
+                if (token != null) plugin.getGuiManager().untrackSessionTask(token, reference[0]);
+            }
+        }, Math.max(0L, delay));
+        reference[0] = task;
+        if (token != null && !plugin.getGuiManager().trackSessionTask(token, task)) {
+            task.cancel();
+        }
+    }
+
+    /** Les taches sont possedees par PlayerGuiSession et annulees lors de close(). */
+    public void cancelPending(UUID playerId) {
+        // Point de cycle de vie explicite conserve pour les futurs scopes hors GUI.
     }
 
     private void executeExtensionById(String id, Player player, String arguments) {

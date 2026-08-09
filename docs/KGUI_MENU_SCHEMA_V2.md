@@ -38,7 +38,7 @@ schema_version: 2
 | `allowed_worlds`, `blocked_worlds` | liste de chaînes | Filtres de mondes. |
 | `open_on_region_enter`, `allowed_regions`, `blocked_regions` | liste de chaînes | Intégration WorldGuard. |
 | `cooldown` | entier positif ou nul | Délai d'ouverture en secondes. |
-| `update_interval` | entier positif ou nul | Intervalle historique en ticks; son remplacement événementiel relève du Lot 3. |
+| `update_interval` | entier positif ou nul | Intervalle historique en ticks; le scheduler d'invalidation ciblée relève du Lot 5. |
 | `pagination` | section | Configuration paginée recommandée. |
 | `content_slots`, `prev_button_slot`, `next_button_slot`, `max_pages` | slots/entiers | Ancien format racine encore accepté. |
 | `provider`, `provider_args` | chaîne/section scalaire | Fournisseur dynamique et arguments libres. |
@@ -152,5 +152,19 @@ sont extensibles; ils sont transmis au moteur de requirements et aux hooks.
 - aucune fermeture ni modification du cache actif par `/kgui validate`;
 - conservation du snapshot précédent si une compilation ou une matérialisation échoue.
 
-Le modèle runtime `MenuData` reste temporairement généré depuis le modèle immuable pour le renderer V1.
-Il disparaîtra du chemin principal avec le renderer différentiel du Lot 3.
+Le modèle runtime `MenuData` reste temporairement généré depuis le modèle immuable pour l'adaptateur
+d'items et la pagination historiques. Depuis le Lot 3, le rendu actif est un `RenderedSlot[]` lié à une
+session/révision et un refresh à titre/taille stables ne crée plus de nouvel inventaire Bukkit.
+La suppression finale de l'adaptateur `MenuData` et l'unification du viewport relèvent du Lot 5.
+
+## Sécurité runtime
+
+- le holder contient l'UUID propriétaire, l'identifiant de session et la révision de rendu;
+- les actions de clic restent côté serveur dans le slot rendu et ne sont jamais sérialisées dans le NBT;
+- seuls les clics gauche, droit, shift-gauche, shift-droit et milieu peuvent déclencher une action;
+- number-key, double-clic, drop/control-drop, creative, clic extérieur, inventaire joueur et type inconnu
+  sont annulés sans action;
+- tous les drags et transferts impliquant un inventaire Kgui sont annulés;
+- close, quit, kick, changement de monde, reload et disable invalident la session de façon idempotente;
+- les refreshs, animations et actions retardées sont liés au jeton de session et annulés à sa fermeture;
+- les saisies chat et confirmations utilisent leurs propres jetons consommables une seule fois.

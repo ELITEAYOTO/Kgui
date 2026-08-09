@@ -91,6 +91,10 @@ public class PaginationManager {
         private final boolean glow;
         private final Map<String, String> placeholders;
         private final List<String> clickActions;
+        private final List<String> leftClickActions;
+        private final List<String> rightClickActions;
+        private final List<String> shiftClickActions;
+        private final String bindingId;
         private final String skullOwner;
         private final String headDatabaseId;
         
@@ -102,13 +106,27 @@ public class PaginationManager {
         public PaginationItem(String material, short data, String name, List<String> lore,
                               boolean glow, Map<String, String> placeholders, List<String> clickActions,
                               String skullOwner, String headDatabaseId) {
+            this(material, data, name, lore, glow, placeholders, clickActions,
+                Collections.<String>emptyList(), Collections.<String>emptyList(),
+                Collections.<String>emptyList(), "legacy", skullOwner, headDatabaseId);
+        }
+
+        public PaginationItem(String material, short data, String name, List<String> lore,
+                              boolean glow, Map<String, String> placeholders, List<String> clickActions,
+                              List<String> leftClickActions, List<String> rightClickActions,
+                              List<String> shiftClickActions, String bindingId,
+                              String skullOwner, String headDatabaseId) {
             this.material = material;
             this.data = data;
             this.name = name;
-            this.lore = lore;
+            this.lore = lore == null ? Collections.<String>emptyList() : new ArrayList<>(lore);
             this.glow = glow;
-            this.placeholders = placeholders;
-            this.clickActions = clickActions;
+            this.placeholders = placeholders == null ? Collections.<String, String>emptyMap() : new HashMap<>(placeholders);
+            this.clickActions = clickActions == null ? Collections.<String>emptyList() : new ArrayList<>(clickActions);
+            this.leftClickActions = leftClickActions == null ? Collections.<String>emptyList() : new ArrayList<>(leftClickActions);
+            this.rightClickActions = rightClickActions == null ? Collections.<String>emptyList() : new ArrayList<>(rightClickActions);
+            this.shiftClickActions = shiftClickActions == null ? Collections.<String>emptyList() : new ArrayList<>(shiftClickActions);
+            this.bindingId = bindingId == null ? "dynamic" : bindingId;
             this.skullOwner = skullOwner;
             this.headDatabaseId = headDatabaseId;
         }
@@ -120,6 +138,10 @@ public class PaginationManager {
         public boolean isGlow() { return glow; }
         public Map<String, String> getPlaceholders() { return placeholders; }
         public List<String> getClickActions() { return clickActions; }
+        public List<String> getLeftClickActions() { return leftClickActions; }
+        public List<String> getRightClickActions() { return rightClickActions; }
+        public List<String> getShiftClickActions() { return shiftClickActions; }
+        public String getBindingId() { return bindingId; }
         public String getSkullOwner() { return skullOwner; }
         public String getHeadDatabaseId() { return headDatabaseId; }
     }
