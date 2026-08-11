@@ -31,3 +31,4 @@ limité à 32 caractères après résolution des placeholders sur Minecraft 1.8.
 Les slots sont indexés à partir de 0. Une erreur de schéma bloque uniquement le
 menu fautif et apparaît dans `kgui validate`/`kgui diagnose`.
 
+

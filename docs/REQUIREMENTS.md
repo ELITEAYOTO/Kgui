@@ -18,6 +18,7 @@ open_requirements:
     expression: "%player_level% >= 10"
 ```
 
+
 Les extensions enregistrent leurs propres types (`kfaction:available`,
 `kfaction:has_faction`, `kfaction:capability`,
 `kjobsultimate:data_loaded`, etc.). Une dépendance absente doit refuser la

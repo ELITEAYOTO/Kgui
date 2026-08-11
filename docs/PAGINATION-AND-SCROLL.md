@@ -27,3 +27,4 @@ La molette physique change normalement le slot de hotbar dans le protocole
 Minecraft 1.8 ; elle n'est donc pas détournée. Le « scroll » Kgui est volontairement
 piloté par des boutons/actions configurables, fiable avec tous les clients 1.8.
 
+
