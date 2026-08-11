@@ -9,7 +9,6 @@ softdepend:
   - ProtocolLib
   - WorldGuard
   - CombatTagPlus
-  - zAuctionHouse
   - HeadDatabase
   - PlayerPoints
   - Kfaction
@@ -18,13 +17,19 @@ commands:
   kgui:
     description: Commandes principales de Kgui
     usage: /<command> [subcommand]
-    permission: kgui.admin
     aliases: [kg, gui]
 
 permissions:
   kgui.admin:
     description: Accès à toutes les commandes admin de Kgui
     default: op
+    children:
+      kgui.open: true
+      kgui.open.others: true
+      kgui.reload: true
+      kgui.debug: true
+      kgui.list: true
+      kgui.info: true
   kgui.open:
     description: Permet d'ouvrir des menus
     default: true
@@ -36,6 +41,12 @@ permissions:
     default: op
   kgui.debug:
     description: Permet d'utiliser le mode debug
+    default: op
+  kgui.list:
+    description: Permet de lister les menus
+    default: op
+  kgui.info:
+    description: Permet d'afficher les informations d'un menu
     default: op
   kgui.bypass.combat:
     description: Bypass le blocage en combat

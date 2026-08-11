@@ -87,7 +87,6 @@ public class MessageManager {
         
         // Messages de security
         cacheMessage("item-removed");
-        cacheMessage("auction-blocked");
     }
 
     /**

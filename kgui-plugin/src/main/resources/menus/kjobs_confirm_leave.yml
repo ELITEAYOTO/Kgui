@@ -1,0 +1,31 @@
+schema_version: 2
+id: kjobs_confirm_leave
+title: "&4Confirmer l'abandon"
+size: 27
+type: pagination
+refresh: {policy: EVENT}
+open_requirements:
+  api: {type: "kjobsultimate:available", deny_message: "&cKjobsUltimate est absent ou incompatible."}
+  data: {type: "kjobsultimate:data_loaded", deny_message: "&eTes données de métiers sont encore en chargement."}
+pagination:
+  enabled: true
+  navigation: PAGE
+  content_slots: [13]
+  prev_button_slot: -1
+  next_button_slot: -1
+  max_pages: 1
+  provider: "kjobsultimate:leave_confirmation"
+  empty_message: "&7La demande a expiré ou n'est plus valide."
+  empty_item: {material: BARRIER, display_name: "&7Confirmation expirée"}
+items:
+  background:
+    slots: "0-12,14-21,23-26"
+    material: STAINED_GLASS_PANE
+    data: 14
+    display_name: " "
+    kgui_protected: true
+  cancel:
+    slot: 22
+    material: ARROW
+    display_name: "&aAnnuler et revenir"
+    click_actions: ["[kjobsultimate:cancel_leave]"]

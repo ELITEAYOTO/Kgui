@@ -1,126 +1,22 @@
-# ==============================================================================
-# KGUI - RECOMPENSES NIVEAU (faction_rewards.yml)
-# ==============================================================================
-# Arbre des recompenses par niveau de faction
-# Affiche les 10 niveaux avec leurs rewards et le statut debloque/verrouille
-#
-# OUVERTURE: Via faction_level.yml
-# CONTENT PROVIDER: kfaction_rewards (enregistre par Kfaction)
-# ==============================================================================
-
-title: "&6【 &a&lRecompenses &6】"
+schema_version: 2
+id: faction_rewards
+title: "&aRécompenses &8• &7%page%/%max_page%"
 size: 54
-type: paginated
-
-block_in_combat: true
-cooldown: 2
-update_interval: 20
-
+type: pagination
+refresh: {policy: EVENT}
+open_requirements:
+  api: {type: "kfaction:available", deny_message: "&cLe pack Kfaction est indisponible."}
+  faction: {type: "kfaction:has_faction", deny_message: "&cTu dois appartenir à une faction."}
 pagination:
   enabled: true
-  content_slots: "10,11,12,13,14,15,16,19,20,21,22,23,24,25"
-  provider: "kfaction_rewards"
-  provider_args:
-    type: "all"
-  empty_item:
-    material: BARRIER
-    display_name: "&cAucune recompense"
-    lore:
-      - "&7Erreur de chargement."
-
-open_requirements:
-  check_faction:
-    type: has_faction
-    deny_message: "&c✖ Tu dois etre dans une faction!"
-
-# ==============================================================================
-# ITEMS
-# ==============================================================================
+  navigation: PAGE
+  content_slots: "10-16,19-25,28-34"
+  prev_button_slot: 48
+  next_button_slot: 50
+  provider: "kfaction:rewards"
+  empty_message: "&7Aucun niveau de récompense."
 items:
-
-  # ============================================================================
-  # BACKGROUNDS
-  # ============================================================================
-  background:
-    slots: "0,1,2,3,5,6,7,8,9,17,18,26,27,35,36,44,46,47,48,50,51,52,53"
-    material: CLAY_BALL
-    cit: background_2
-    glow: false
-    hide_attributes: true
-    kgui_protected: true
-    display_name: " "
-    
-  background2:
-    slots: "28,29,30,31,32,33,34,37,38,39,40,41,42,43"
-    material: CLAY_BALL
-    cit: background_1
-    glow: false
-    hide_attributes: true
-    kgui_protected: true
-    display_name: " "
-
-  # ============================================================================
-  # TITRE (slot 4)
-  # ============================================================================
-  title_item:
-    slot: 4
-    material: NETHER_STAR
-    glow: true
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&a&l✦ Arbre des Recompenses"
-    lore:
-      - ""
-      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-      - ""
-      - "&7Ton niveau: &6%kfaction_faction_level%"
-      - "&7XP: &a%kfaction_faction_xp% &7/ &a%kfaction_faction_required_xp%"
-      - ""
-      - "&7Chaque niveau debloque"
-      - "&7des recompenses permanentes!"
-      - ""
-      - "&a✔ &7= Debloque"
-      - "&c✖ &7= Verrouille"
-      - ""
-      - "&8▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬"
-    priority: 10
-
-  # ============================================================================
-  # RETOUR (slot 45)
-  # ============================================================================
-  back_button:
-    slot: 45
-    material: ARROW
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&c&l◄ Retour"
-    lore:
-      - ""
-      - "&7Retourner au niveau faction"
-    
-    click_actions:
-      - "[sound] CLICK 1.0 0.8"
-      - "[open] faction_level"
-
-  # ============================================================================
-  # INFO (slot 49)
-  # ============================================================================
-  info_button:
-    slot: 49
-    material: CLAY_BALL
-    cit: gear
-    glow: false
-    hide_attributes: true
-    kgui_protected: true
-    display_name: "&e&lInfos"
-    lore:
-      - "&8---------------"
-      - "&7Les recompenses sont"
-      - "&7appliquees automatiquement"
-      - "&7quand ta faction monte"
-      - "&7en niveau."
-      - ""
-      - "&7Certains niveaux apres"
-      - "&7le 5 donnent &a100 PP"
-      - "&7au chef de faction."
-      - "&8---------------"
+  back: {slot: 45, material: ARROW, display_name: "&cRetour", click_actions: ["[open] faction_menu"]}
+  previous: {slot: 48, material: ARROW, display_name: "&ePage précédente", click_actions: ["[previous_page]"]}
+  page: {slot: 49, material: PAPER, display_name: "&ePage %page%/%max_page%"}
+  next: {slot: 50, material: ARROW, display_name: "&ePage suivante", click_actions: ["[next_page]"]}

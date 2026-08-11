@@ -1,42 +1,44 @@
 package me.krunsh.kgui.hooks;
 
-import me.arcaniax.hdb.api.HeadDatabaseAPI;
-import me.krunsh.kgui.Kgui;
+import java.lang.reflect.Method;
+
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
-/**
- * Hook pour HeadDatabase
- */
-public class HeadDatabaseHook {
+import me.krunsh.kgui.Kgui;
 
+/** Adaptateur HeadDatabase dechargeable. */
+public final class HeadDatabaseHook implements AutoCloseable {
     private final Kgui plugin;
-    private HeadDatabaseAPI api;
+    private Object api;
+    private Method getItemHead;
 
-    public HeadDatabaseHook(Kgui plugin) {
+    public HeadDatabaseHook(Kgui plugin, Plugin dependency) throws ReflectiveOperationException {
         this.plugin = plugin;
-        this.api = new HeadDatabaseAPI();
+        Class<?> apiType = ReflectionAccess.load(dependency.getClass().getClassLoader(),
+            "me.arcaniax.hdb.api.HeadDatabaseAPI");
+        api = ReflectionAccess.construct(apiType);
+        getItemHead = ReflectionAccess.method(apiType, "getItemHead", 1);
     }
 
-    /**
-     * Obtient une tête depuis HeadDatabase
-     */
     public ItemStack getHead(String id) {
+        if (api == null || getItemHead == null || id == null || id.trim().isEmpty()) return null;
         try {
-            return api.getItemHead(id);
-        } catch (Exception e) {
+            Object result = ReflectionAccess.invoke(api, getItemHead, id.trim());
+            return result instanceof ItemStack ? (ItemStack) result : null;
+        } catch (ReflectiveOperationException | RuntimeException error) {
             plugin.getLogger().warning("Failed to get head from HeadDatabase: " + id);
             return null;
         }
     }
 
-    /**
-     * Vérifie si un ID de tête existe
-     */
     public boolean isHead(String id) {
-        try {
-            return api.getItemHead(id) != null;
-        } catch (Exception e) {
-            return false;
-        }
+        return getHead(id) != null;
+    }
+
+    @Override
+    public void close() {
+        getItemHead = null;
+        api = null;
     }
 }

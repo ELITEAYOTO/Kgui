@@ -3,6 +3,7 @@ package me.krunsh.kgui.listeners;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import me.krunsh.kgui.Kgui;
 import me.krunsh.kgui.gui.KguiInventoryHolder;
+import me.krunsh.kgui.session.CloseReason;
 import org.bukkit.Material;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
@@ -120,7 +121,21 @@ public class SecurityListener implements Listener {
         
         // Fermer le menu si ouvert
         if (plugin.getGuiManager().hasOpenMenu(event.getPlayer())) {
-            plugin.getGuiManager().closeMenu(event.getPlayer(), false);
+            if (plugin.getGuiManager().closeMenu(event.getPlayer(), false, CloseReason.QUIT)) {
+                // Some legacy plugins retain Player after quit. Reset the NMS
+                // container now so that retention cannot keep a Kgui inventory.
+                event.getPlayer().closeInventory();
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onPlayerKick(PlayerKickEvent event) {
+        if (plugin.getConfigManager().isCleanOnQuit()) {
+            cleanPlayerInventory(event.getPlayer());
+        }
+        if (plugin.getGuiManager().closeMenu(event.getPlayer(), false, CloseReason.KICK)) {
+            event.getPlayer().closeInventory();
         }
     }
 
@@ -135,6 +150,7 @@ public class SecurityListener implements Listener {
         
         // Fermer le menu si ouvert
         if (plugin.getGuiManager().hasOpenMenu(event.getPlayer())) {
+            plugin.getGuiManager().closeMenu(event.getPlayer(), false, CloseReason.WORLD_CHANGE);
             event.getPlayer().closeInventory();
         }
     }
@@ -181,7 +197,7 @@ public class SecurityListener implements Listener {
         try {
             NBTItem nbtItem = new NBTItem(item);
             return nbtItem.hasKey(nbtTag);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return false;
         }
     }

@@ -6,76 +6,63 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
+import java.util.concurrent.ConcurrentHashMap;
 
-/**
- * Écoute les inputs chat des joueurs pour le système d'input
- */
-public class ChatInputListener implements Listener {
-
+/** Capture seulement un jeton ; les callbacks restent possedes par InputManager. */
+public final class ChatInputListener implements Listener {
     private final Kgui plugin;
-    
-    // Callbacks d'input en attente
-    private final Map<UUID, Consumer<String>> pendingInputs = new HashMap<>();
+    private final Map<UUID, Long> pendingTokens = new ConcurrentHashMap<>();
 
     public ChatInputListener(Kgui plugin) {
         this.plugin = plugin;
     }
 
-    /**
-     * Enregistre un callback d'input pour un joueur
-     */
-    public void registerInput(Player player, Consumer<String> callback) {
-        pendingInputs.put(player.getUniqueId(), callback);
+    public void registerInput(Player player, long token) {
+        pendingTokens.put(player.getUniqueId(), token);
     }
 
-    /**
-     * Vérifie si un joueur a un input en attente
-     */
     public boolean hasPendingInput(Player player) {
-        return pendingInputs.containsKey(player.getUniqueId());
+        return pendingTokens.containsKey(player.getUniqueId());
     }
 
-    /**
-     * Annule un input en attente
-     */
-    public void cancelInput(Player player) {
-        Consumer<String> callback = pendingInputs.remove(player.getUniqueId());
-        if (callback != null) {
-            callback.accept(null);
-        }
+    public void discard(UUID playerId) {
+        pendingTokens.remove(playerId);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPlayerChat(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
-        Consumer<String> callback = pendingInputs.remove(player.getUniqueId());
-        
-        if (callback == null) return;
-        
-        // Annuler l'événement pour ne pas envoyer dans le chat
+        Long token = pendingTokens.remove(player.getUniqueId());
+        if (token == null) return;
+
         event.setCancelled(true);
-        
         String message = event.getMessage();
-        
-        // Exécuter le callback sur le thread principal
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            callback.accept(message);
-        });
+        plugin.getServer().getScheduler().runTask(plugin,
+            () -> plugin.getInputManager().acceptChat(player, token, message));
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
-        // Nettoyer les inputs en attente
-        pendingInputs.remove(event.getPlayer().getUniqueId());
+        discard(event.getPlayer().getUniqueId());
+        plugin.getInputManager().discard(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onPlayerKick(PlayerKickEvent event) {
+        discard(event.getPlayer().getUniqueId());
+        plugin.getInputManager().discard(event.getPlayer());
     }
 
     public void cleanup() {
-        pendingInputs.clear();
+        pendingTokens.clear();
+    }
+
+    int pendingCount() {
+        return pendingTokens.size();
     }
 }

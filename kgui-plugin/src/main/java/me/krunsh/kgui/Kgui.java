@@ -6,12 +6,10 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import me.krunsh.kgui.actions.ActionManager;
 import me.krunsh.kgui.animations.AnimationManager;
-import me.krunsh.kgui.api.ContentProviderManager;
 import me.krunsh.kgui.api.KguiApi;
 import me.krunsh.kgui.commands.DynamicCommandManager;
 import me.krunsh.kgui.commands.KguiCommand;
 import me.krunsh.kgui.commands.KguiTabCompleter;
-import me.krunsh.kgui.conditional.ConditionalManager;
 import me.krunsh.kgui.config.ConfigManager;
 import me.krunsh.kgui.config.MessageManager;
 import me.krunsh.kgui.data.PlayerDataManager;
@@ -19,15 +17,19 @@ import me.krunsh.kgui.gui.GuiManager;
 import me.krunsh.kgui.hooks.HookManager;
 import me.krunsh.kgui.input.ChatInputListener;
 import me.krunsh.kgui.input.InputManager;
+import me.krunsh.kgui.integration.KfactionIntegrationManager;
 import me.krunsh.kgui.item.ItemRegistry;
 import me.krunsh.kgui.listeners.GuiListener;
 import me.krunsh.kgui.listeners.SecurityListener;
 import me.krunsh.kgui.menu.MenuManager;
-import me.krunsh.kgui.pagination.PaginationManager;
-import me.krunsh.kgui.pagination.ScrollManager;
+import me.krunsh.kgui.menu.MenuReloadResult;
+import me.krunsh.kgui.metrics.GuiMetrics;
+import me.krunsh.kgui.provider.ProviderEngine;
+import me.krunsh.kgui.refresh.GuiInvalidationBus;
+import me.krunsh.kgui.refresh.RefreshScheduler;
 import me.krunsh.kgui.requirements.RequirementManager;
 import me.krunsh.kgui.service.KguiApiProvider;
-import me.krunsh.kgui.template.TemplateManager;
+import me.krunsh.kgui.session.CloseReason;
 
 /**
  * Kgui - Moteur de GUI avancé pour serveurs 1.8.8 Faction/PvP
@@ -51,12 +53,6 @@ public class Kgui extends JavaPlugin {
     private RequirementManager requirementManager;
     private ActionManager actionManager;
     
-    // Phase 2 Managers
-    private PaginationManager paginationManager;
-    private ScrollManager scrollManager;
-    private ConditionalManager conditionalManager;
-    private TemplateManager templateManager;
-    
     // Phase 3 Managers - Input System
     private InputManager inputManager;
     private ChatInputListener chatInputListener;
@@ -65,11 +61,13 @@ public class Kgui extends JavaPlugin {
     // Dynamic Commands
     private DynamicCommandManager dynamicCommandManager;
     
-    // API: Content Providers for external plugins
-    private ContentProviderManager contentProviderManager;
-
     // API publique V2 publiee via le ServicesManager Bukkit
     private KguiApiProvider apiProvider;
+    private GuiMetrics guiMetrics;
+    private ProviderEngine providerEngine;
+    private RefreshScheduler refreshScheduler;
+    private GuiInvalidationBus guiInvalidationBus;
+    private KfactionIntegrationManager kfactionIntegrationManager;
 
     @Override
     public void onEnable() {
@@ -85,6 +83,11 @@ public class Kgui extends JavaPlugin {
 
         // Publier l'API seulement quand tous ses services sont disponibles
         registerApi();
+
+        // Adaptateur optionnel chargé sans résoudre les classes Kfaction si le
+        // softdepend est absent.
+        this.kfactionIntegrationManager = new KfactionIntegrationManager(this);
+        this.kfactionIntegrationManager.start();
         
         // Enregistrer les listeners
         registerListeners();
@@ -95,8 +98,7 @@ public class Kgui extends JavaPlugin {
         // Enregistrer les commandes dynamiques des menus
         registerDynamicCommands();
         
-        // Démarrer la tâche d'auto-refresh
-        guiManager.startAutoRefreshTask();
+        refreshScheduler.start();
         
         long loadTime = System.currentTimeMillis() - startTime;
         getLogger().info("v" + getDescription().getVersion() + " enabled in " + loadTime + "ms | " 
@@ -105,22 +107,26 @@ public class Kgui extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (kfactionIntegrationManager != null) kfactionIntegrationManager.close();
         shutdownApi();
 
-        // Arrêter l'auto-refresh
-        if (guiManager != null) {
-            guiManager.stopAutoRefreshTask();
-        }
+        if (refreshScheduler != null) refreshScheduler.close();
         
         // Fermer tous les menus ouverts
         if (guiManager != null) {
-            guiManager.closeAllMenus();
+            guiManager.closeAllMenus(CloseReason.DISABLE);
         }
         
         // Arrêter les animations
         if (animationManager != null) {
             animationManager.stopAll();
         }
+        if (inputManager != null) inputManager.cleanup();
+        if (chatInputListener != null) chatInputListener.cleanup();
+        if (playerDataManager != null) playerDataManager.cleanup();
+        if (guiInvalidationBus != null) guiInvalidationBus.close();
+        if (providerEngine != null) providerEngine.close();
+        if (hookManager != null) hookManager.close();
         
         getLogger().info("Kgui disabled.");
         instance = null;
@@ -170,26 +176,31 @@ public class Kgui extends JavaPlugin {
         this.hookManager = new HookManager(this);
         
         // 3. Requirements et Actions (avant items/menus car ils les utilisent)
-        this.requirementManager = new RequirementManager(this);
+        this.requirementManager = new RequirementManager(this, apiProvider);
         this.actionManager = new ActionManager(this, apiProvider);
         
-        // 4. Phase 2 Managers - Templates, Conditions, Pagination
-        this.templateManager = new TemplateManager(this);
-        this.templateManager.loadTemplates();
-        this.conditionalManager = new ConditionalManager(this);
-        this.paginationManager = new PaginationManager(this);
-        this.scrollManager = new ScrollManager(this);
-        
-        // 5. Item Registry
+        // 4. Item Registry
         this.itemRegistry = new ItemRegistry(this);
         
-        // 6. Menu Manager
+        // 5. Menu Manager
         this.menuManager = new MenuManager(this);
+
+        this.guiMetrics = new GuiMetrics();
+        int providerCacheEntries = configManager.getConfig().getInt("performance.provider_cache_entries", 2048);
+        long slowProviderNanos = (long) (configManager.getConfig()
+            .getDouble("performance.provider_slow_warning_ms", 2.0D) * 1_000_000.0D);
+        this.providerEngine = new ProviderEngine(this, apiProvider, guiMetrics,
+            providerCacheEntries, slowProviderNanos);
         
-        // 7. GUI Manager (gestion des inventaires ouverts)
+        // 6. GUI Manager (gestion des inventaires ouverts)
         this.guiManager = new GuiManager(this);
+        this.refreshScheduler = new RefreshScheduler(this, guiManager::performScheduledRefresh, guiMetrics,
+            configManager.getConfig().getInt("performance.max_pending_refreshes", 2048),
+            configManager.getConfig().getInt("performance.max_refreshes_per_tick", 32),
+            configManager.getConfig().getLong("performance.refresh_budget_nanos", 2_000_000L));
+        this.guiInvalidationBus = new GuiInvalidationBus(refreshScheduler, providerEngine, guiMetrics);
         
-        // 8. Animation Manager
+        // 7. Animation Manager
         this.animationManager = new AnimationManager(this);
         
         // 9. Phase 3 - Input System
@@ -197,8 +208,6 @@ public class Kgui extends JavaPlugin {
         this.chatInputListener = new ChatInputListener(this);
         this.inputManager = new InputManager(this);
         
-        // 10. API: Content Provider Manager for external plugins
-        this.contentProviderManager = new ContentProviderManager(this);
     }
 
     /**
@@ -208,16 +217,7 @@ public class Kgui extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new GuiListener(this), this);
         Bukkit.getPluginManager().registerEvents(new SecurityListener(this), this);
         Bukkit.getPluginManager().registerEvents(chatInputListener, this);
-        
-        // Listener WorldGuard si activé
-        if (hookManager.isWorldGuardEnabled()) {
-            hookManager.getWorldGuardHook().registerListeners();
-        }
-        
-        // Listener CombatTag si activé
-        if (hookManager.isCombatTagEnabled()) {
-            hookManager.getCombatTagHook().registerListeners();
-        }
+        Bukkit.getPluginManager().registerEvents(hookManager, this);
     }
 
     /**
@@ -239,11 +239,21 @@ public class Kgui extends JavaPlugin {
     /**
      * Recharge toute la configuration
      */
-    public void reload() {
+    public MenuReloadResult reload() {
         getLogger().info("Reloading Kgui...");
+
+        // Refuser avant tout effet de bord si le graphe de menus est invalide.
+        MenuReloadResult preflight = menuManager.validate();
+        if (!preflight.isSuccess()) {
+            getLogger().warning("Reload aborted: invalid menu configuration; live state retained");
+            return preflight;
+        }
         
         // Fermer tous les menus
         guiManager.closeAllMenus();
+        inputManager.cleanup();
+        chatInputListener.cleanup();
+        playerDataManager.cleanup();
         
         // Arrêter les animations
         animationManager.stopAll();
@@ -252,12 +262,9 @@ public class Kgui extends JavaPlugin {
         configManager.reload();
         messageManager.reload();
         
-        // Recharger les templates
-        templateManager.reload();
-        
         // Recharger les items et menus
         itemRegistry.reload();
-        menuManager.reload();
+        MenuReloadResult menuResult = menuManager.reload();
         
         // Recharger les animations
         animationManager.reload();
@@ -268,6 +275,7 @@ public class Kgui extends JavaPlugin {
         }
         
         getLogger().info("Reload complete! " + itemRegistry.getItemCount() + " items, " + menuManager.getMenuCount() + " menus");
+        return menuResult;
     }
 
     // ==================== GETTERS ====================
@@ -312,22 +320,6 @@ public class Kgui extends JavaPlugin {
         return actionManager;
     }
 
-    public PaginationManager getPaginationManager() {
-        return paginationManager;
-    }
-
-    public ScrollManager getScrollManager() {
-        return scrollManager;
-    }
-
-    public ConditionalManager getConditionalManager() {
-        return conditionalManager;
-    }
-
-    public TemplateManager getTemplateManager() {
-        return templateManager;
-    }
-
     public InputManager getInputManager() {
         return inputManager;
     }
@@ -344,16 +336,14 @@ public class Kgui extends JavaPlugin {
         return dynamicCommandManager;
     }
 
-    /**
-     * Get the ContentProviderManager for registering dynamic content providers.
-     * External plugins can use this to register their own pagination content.
-     * @return The ContentProviderManager instance
-     */
-    public ContentProviderManager getContentProviderManager() {
-        return contentProviderManager;
-    }
-
     public KguiApi getApi() {
         return apiProvider;
     }
+
+    public KguiApiProvider getApiProvider() { return apiProvider; }
+    public GuiMetrics getGuiMetrics() { return guiMetrics; }
+    public ProviderEngine getProviderEngine() { return providerEngine; }
+    public RefreshScheduler getRefreshScheduler() { return refreshScheduler; }
+    public GuiInvalidationBus getGuiInvalidationBus() { return guiInvalidationBus; }
+    public KfactionIntegrationManager getKfactionIntegrationManager() { return kfactionIntegrationManager; }
 }

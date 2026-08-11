@@ -1,0 +1,43 @@
+schema_version: 2
+id: kjobs_quests
+title: "&8Quêtes de métiers"
+size: 54
+type: scroll
+refresh: {policy: EVENT}
+open_requirements:
+  api: {type: "kjobsultimate:available", deny_message: "&cKjobsUltimate est absent ou incompatible."}
+  data: {type: "kjobsultimate:data_loaded", deny_message: "&eTes données de métiers sont encore en chargement."}
+pagination:
+  enabled: true
+  navigation: ROW_SCROLL
+  content_slots: "10-16,19-25,28-34"
+  prev_button_slot: 45
+  next_button_slot: 53
+  max_pages: 0
+  provider: "kjobsultimate:quests"
+  empty_message: "&7Aucune quête disponible pour ce filtre."
+  empty_item: {material: PAPER, display_name: "&7Aucune quête"}
+items:
+  all: {slot: 1, material: NETHER_STAR, display_name: "&fToutes", click_actions: ["[kjobsultimate:open_quests]"]}
+  mineur: {slot: 2, material: IRON_PICKAXE, display_name: "&bMineur", click_actions: ["[kjobsultimate:open_quests] job_id=mineur"]}
+  farmer: {slot: 3, material: WHEAT, display_name: "&aFarmeur", click_actions: ["[kjobsultimate:open_quests] job_id=farmer"]}
+  hunter: {slot: 4, material: BOW, display_name: "&cChasseur", click_actions: ["[kjobsultimate:open_quests] job_id=hunter"]}
+  pretorien: {slot: 5, material: IRON_SWORD, display_name: "&6Prétorien", click_actions: ["[kjobsultimate:open_quests] job_id=pretorien"]}
+  artisan: {slot: 6, material: ANVIL, display_name: "&dArtisan", click_actions: ["[kjobsultimate:open_quests] job_id=artisan"]}
+  pilleur: {slot: 7, material: TNT, display_name: "&5Pilleur", click_actions: ["[kjobsultimate:open_quests] job_id=pilleur"]}
+  up:
+    slot: 45
+    material: ARROW
+    display_name: "&eMonter d'une ligne"
+    click_actions: ["[kgui:navigate] direction=up step=1"]
+  back:
+    slot: 49
+    material: BOOK
+    display_name: "&eRetour aux métiers"
+    click_actions: ["[kjobsultimate:open_main]"]
+  down:
+    slot: 53
+    material: ARROW
+    display_name: "&eDescendre d'une ligne"
+    click_actions: ["[kgui:navigate] direction=down step=1"]
+

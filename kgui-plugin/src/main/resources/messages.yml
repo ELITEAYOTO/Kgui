@@ -43,7 +43,6 @@ requirement-placeholder-check-failed: "&cCondition non remplie."
 
 # Messages de sécurité
 item-removed: "&7Un item de GUI a été supprimé de votre inventaire."
-auction-blocked: "&cVous ne pouvez pas vendre des items de GUI!"
 
 # Messages de debug
 debug-enabled: "&aMode debug activé pour &e%player%&a."
@@ -51,6 +50,20 @@ debug-disabled: "&7Mode debug désactivé."
 
 # Messages de pagination
 pagination-empty: "&7Aucun contenu à afficher."
+provider-click-error: "&cCette action dynamique n'est plus disponible. Réessayez."
+kfaction-faction-required: "&cVous devez appartenir à une faction."
+kfaction-role-required: "&cVotre rôle de faction est insuffisant."
+kfaction-relation-required: "&cLa relation de faction requise n'est pas active."
+kfaction-cannot-afford: "&cLa banque de faction ne possède pas ce montant."
+kfaction-no-change: "&7Aucune modification n'était nécessaire."
+kfaction-cancelled: "&cL'action de faction a été annulée."
+kfaction-invalid-input: "&cLes paramètres de l'action de faction sont invalides."
+kfaction-not-found: "&cLa faction, le joueur ou l'élément demandé est introuvable."
+kfaction-forbidden: "&cVotre rôle de faction n'autorise pas cette action."
+kfaction-conflict: "&cL'état de la faction a changé. Rouvrez le menu puis réessayez."
+kfaction-limit-reached: "&cLa limite configurée pour cette action est atteinte."
+kfaction-unavailable: "&cCette fonction de faction est actuellement indisponible."
+kfaction-action-failed: "&cL'action de faction a échoué sans modifier les données."
 debug-requirement-failed: "&c[Debug] Requirement échoué: &e%type% &c- %reason%"
 debug-action-executed: "&a[Debug] Action exécutée: &e%action%"
 
@@ -61,8 +74,11 @@ help:
   commands:
     - "&e/kgui &7- Affiche cette aide"
     - "&e/kgui open <menu> [player] &7- Ouvre un menu"
-    - "&e/kgui reload &7- Recharge la configuration"
+    - "&e/kgui reload [menu] &7- Recharge tout ou un seul menu"
+    - "&e/kgui validate &7- Valide sans publier"
+    - "&e/kgui dump <menu> &7- Affiche le YAML compilé"
     - "&e/kgui debug [player] &7- Active le mode debug"
+    - "&e/kgui diagnose &7- Affiche les metriques et l'etat des integrations"
     - "&e/kgui list &7- Liste tous les menus"
     - "&e/kgui info <menu> &7- Informations sur un menu"
 

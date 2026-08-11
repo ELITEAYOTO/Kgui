@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -95,6 +96,11 @@ public class PlayerDataManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         // Nettoyer les données du joueur quand il quitte
+        playerData.remove(event.getPlayer().getUniqueId());
+    }
+
+    @EventHandler
+    public void onPlayerKick(PlayerKickEvent event) {
         playerData.remove(event.getPlayer().getUniqueId());
     }
 

@@ -8,6 +8,7 @@ import java.util.Map;
 import org.bukkit.configuration.ConfigurationSection;
 
 import me.krunsh.kgui.Kgui;
+import me.krunsh.kgui.refresh.RefreshPolicy;
 
 /**
  * Données d'un menu
@@ -47,6 +48,7 @@ public class MenuData {
     // Cooldown et update
     private int cooldown = 0;
     private int updateInterval = 0;
+    private RefreshPolicy refreshPolicy = RefreshPolicy.EVENT;
     
     // Pagination
     private List<Integer> contentSlots = new ArrayList<>();
@@ -55,7 +57,7 @@ public class MenuData {
     private int staticMaxPages = 0; // 0 = auto, sinon valeur fixe
     
     // Content Provider (API for external plugins)
-    private String contentProvider;  // Provider ID (e.g., "kfaction_logs")
+    private String contentProvider;  // Provider ID namespacé (e.g., "kfaction:logs")
     private Map<String, String> providerArgs = new HashMap<>();  // Args to pass to provider
     private String emptyMessage;  // Message when no content
     private ConfigurationSection emptyItemConfig;  // Item to show when empty
@@ -275,6 +277,15 @@ public class MenuData {
 
     public void setUpdateInterval(int updateInterval) {
         this.updateInterval = updateInterval;
+    }
+
+    public RefreshPolicy getRefreshPolicy() { return refreshPolicy; }
+    public void setRefreshPolicy(RefreshPolicy refreshPolicy) {
+        this.refreshPolicy = refreshPolicy == null ? RefreshPolicy.EVENT : refreshPolicy;
+    }
+
+    public int getScheduledRefreshInterval() {
+        return refreshPolicy.hasInterval() ? Math.max(0, updateInterval) : 0;
     }
 
     public List<Integer> getContentSlots() {

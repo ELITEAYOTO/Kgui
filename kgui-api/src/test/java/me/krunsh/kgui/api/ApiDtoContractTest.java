@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.LinkedHashSet;
 import org.junit.Test;
 
 public class ApiDtoContractTest {
@@ -66,5 +67,25 @@ public class ApiDtoContractTest {
     public void contentRequestsAreBounded() {
         new ContentRequest(UUID.randomUUID(), "menu", "owner:provider", 0,
                 ContentRequest.MAX_LIMIT + 1, 0, MenuArguments.empty());
+    }
+
+    @Test
+    public void invalidationItemTargetsAreBounded() {
+        java.util.Set<String> ids = new LinkedHashSet<>();
+        for (int index = 0; index < 400; index++) ids.add("item-" + index);
+        InvalidationRequest request = InvalidationRequest.playerMenu(
+            UUID.randomUUID(), "menu", ids, "test");
+        assertTrue(request.getItemIds().size() <= 256);
+
+        ids.clear();
+        ids.add(repeat('x', 129));
+        assertTrue(InvalidationRequest.playerMenu(UUID.randomUUID(), "menu", ids, "test")
+            .getItemIds().isEmpty());
+    }
+
+    private static String repeat(char value, int count) {
+        StringBuilder result = new StringBuilder(count);
+        for (int index = 0; index < count; index++) result.append(value);
+        return result.toString();
     }
 }

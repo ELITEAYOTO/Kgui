@@ -1,3 +1,4 @@
+schema_version: 2
 title: "&7【&8&lSpawners &7】&7Page %page%/%max_page%"
 size: 54
 type: paginated
@@ -9,15 +10,15 @@ pagination:
   next_button_slot: 25                 # Slot du bouton "page suivante"
   max_pages: 2                 # Nombre total de pages (ajustez selon vos besoins)
 open_commands:
-  - 'sp'
-  - 'spawner'
+  - 'spawnerinfo'
+  - 'guisspawners'
 open_actions:
   - '[message] &6Ouverture du menu des Spawners!'
 allowed_worlds:
   - 'world'
 block_in_combat: true
 cooldown: 2
-update_interval: 20
+refresh: {policy: EVENT}
 
 items:
   
@@ -199,4 +200,3 @@ items:
     hide_attributes: true
     kgui_protected: true
     priority: 1
-    
