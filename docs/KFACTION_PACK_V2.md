@@ -36,6 +36,7 @@ peuvent tous être modifiés :
 | `faction_invites` | `kfaction:invites` | pages |
 | `faction_zones` | `kfaction:zones` | scroll par ligne |
 
+
 La commande d'ouverture livrée est `/fmenu`. La commande `/f menu` reste
 volontairement la commande autonome de Kfaction.
 
@@ -136,3 +137,35 @@ les requêtes, conserve le viewport et n'applique à l'inventaire que le diff de
 slots effectivement modifiés.
 
 L'état de l'adaptateur apparaît dans `/kgui debug` sous `Kfaction API`.
+
+
+┌─────────────────────────────────────────────┐
+│ Taille GUI : [45 ▼]       Titre : Faction  │
+├─────────────────────────────────────────────┤
+│  0 │  1 │  2 │  3 │  4 │  5 │  6 │  7 │  8 │
+│  9 │ 10 │ 11 │ 12 │ 13 │ 14 │ 15 │ 16 │ 17 │
+│ 18 │ 19 │ 20 │ 21 │ 22 │ 23 │ 24 │ 25 │ 26 │
+│ 27 │ 28 │ 29 │ 30 │ 31 │ 32 │ 33 │ 34 │ 35 │
+│ 36 │ 37 │ 38 │ 39 │ 40 │ 41 │ 42 │ 43 │ 44 │
+└─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│ Taille GUI : [54 ▼]       Titre : Faction   │
+├─────────────────────────────────────────────┤
+│  0 │  1 │  2 │  3 │  4 │  5 │  6 │  7 │  8  │
+│  9 │ 10 │ 11 │ 12 │ 13 │ 14 │ 15 │ 16 │ 17  │
+│ 18 │ 19 │ 20 │ 21 │ 22 │ 23 │ 24 │ 25 │ 26  │
+│ 27 │ 28 │ 29 │ 30 │ 31 │ 32 │ 33 │ 34 │ 35  │
+│ 36 │ 37 │ 38 │ 39 │ 40 │ 41 │ 42 │ 43 │ 44  │
+| 45 │ 46 │ 47 │ 48 │ 49 │ 50 │ 51 │ 52 │ 53  │
+└─────────────────────────────────────────────┘
+
+Item sélectionné :
+Material : DIAMOND
+CIT      : faction_info
+HDB      : -
+Name     : &bInformations
+
+Slot : 22
+
+[ Copier le YAML ]

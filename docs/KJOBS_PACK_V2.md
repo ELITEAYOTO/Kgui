@@ -34,6 +34,7 @@ vide et n'exécute aucune mutation.
 
 ## Actions typées
 
+
 Les actions disponibles sont :
 
 ```text
