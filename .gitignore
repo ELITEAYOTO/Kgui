@@ -5,6 +5,8 @@
 *.class
 *.log
 *.hprof
+*.jar
+/libs/
 
 # Runtime folders created when the plugin is launched from the repository
 /menus/
